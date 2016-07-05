@@ -13,8 +13,7 @@ namespace BasicProcessing
 {
     public partial class Form1 : Form
     {
-        public short lDataList;
-        public short rDataList;
+        public DataList data;
         public string[] s;
         public string fileout;
         public Form1()
@@ -24,7 +23,7 @@ namespace BasicProcessing
                 @".\音ファイル\g1.wav",
                 @".\kekka_wav.txt" };
             fileout = @".\kekka_content_wav.txt";
-            exMain(s, fileout);
+            data = exMain(s, fileout);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -48,6 +47,19 @@ namespace BasicProcessing
             public byte[] dataID; // "data"
             public uint dataSize; // 波形データのバイト数
         }
+        public struct DataList
+        {
+            public List<short> lDataList;
+            public List<short> rDataList;
+            public WavHeader WavHeader;
+
+            public DataList(List<short> lDataList, List<short> rDataList, WavHeader WavHeader)
+            {
+                this.lDataList = lDataList;
+                this.rDataList = rDataList;
+                this.WavHeader = WavHeader;
+            }
+        }
 
         /// <summary>
         /// このメソッドでは外部からでも呼び出せるように、静的とする
@@ -59,7 +71,7 @@ namespace BasicProcessing
         /// </summary>
         /// <param name="args"></param>
         /// <param name="fileout"></param>
-        static void exMain(string[] args, string fileout)
+        static DataList exMain(string[] args, string fileout)
         {
             WavHeader Header = new WavHeader();
             List<short> lDataList = new List<short>();
@@ -161,17 +173,12 @@ namespace BasicProcessing
                     if (bw != null) bw.Close();
                     if (fs != null) fs.Close();
                 }
-            }return;
+            }
+            DataList exdata = new DataList(lDataList, rDataList, Header);
+            return exdata;
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            WaveShow
-            ws = new WaveShow(lDataList, rDataList);
-            ws.Show();
-        }
-
-        private static void WriteFileContent(ref WavHeader Header, string fileout)
+        private static void WriteFileContent(WavHeader Header, string fileout)
         {
             string tmp;
 
@@ -206,6 +213,12 @@ namespace BasicProcessing
                 kekkaout.WriteLine("wavID : " + tmp);
             }
             kekkaout.Close();
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            WaveShow ws = new WaveShow(data.lDataList, data.rDataList);
+            ws.Show();
         }
     }
 }
