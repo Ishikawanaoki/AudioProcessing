@@ -89,6 +89,23 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="音ファイル\a1.wav" />
+    <Content Include="音ファイル\a1s.wav" />
+    <Content Include="音ファイル\b1.wav" />
+    <Content Include="音ファイル\c1.wav" />
+    <Content Include="音ファイル\c1s.wav" />
+    <Content Include="音ファイル\c2.wav" />
+    <Content Include="音ファイル\d1.wav" />
+    <Content Include="音ファイル\d1s.wav" />
+    <Content Include="音ファイル\e1.wav" />
+    <Content Include="音ファイル\f1.wav" />
+    <Content Include="音ファイル\f1s.wav" />
+    <Content Include="音ファイル\g1.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="音ファイル\g1s.wav" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

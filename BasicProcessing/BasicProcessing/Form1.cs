@@ -21,9 +21,9 @@ namespace BasicProcessing
         {
             InitializeComponent();
             s = new string[] {
-                @"C:\Users\N.Ishikawa\Desktop\data\au\a1.wav",
-                @"C:\Users\N.Ishikawa\Desktop\data\kekka_wav.txt" };
-            fileout = @"C:\Users\N.Ishikawa\Desktop\data\kekka_content_wav.txt";
+                @".\音ファイル\g1.wav",
+                @".\kekka_wav.txt" };
+            fileout = @".\kekka_content_wav.txt";
             exMain(s, fileout);
         }
 
@@ -32,7 +32,7 @@ namespace BasicProcessing
 
         }
 
-        struct WavHeader
+        public struct WavHeader
         {
             public byte[] riffID; // "riff"
             public uint size;  // ファイルサイズ-8
@@ -49,12 +49,21 @@ namespace BasicProcessing
             public uint dataSize; // 波形データのバイト数
         }
 
+        /// <summary>
+        /// このメソッドでは外部からでも呼び出せるように、静的とする
+        /// 処理の中断を明確にするために、状態を保存、のちにラベル表示できる。（未）
+        /// readerとwriterは分ける。（未）
+        /// 静的なメソッドでは、メソッド外とのオブジェクト参照は禁止される（要出典）
+        /// 
+        /// このrederとwriterに求めることは、新たなwavファイルの生成
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="fileout"></param>
         static void exMain(string[] args, string fileout)
         {
             WavHeader Header = new WavHeader();
             List<short> lDataList = new List<short>();
             List<short> rDataList = new List<short>();
-            WaveShow ws;
 
             using (FileStream fs = new FileStream(args[0], FileMode.Open, FileAccess.Read))
             using (BinaryReader br = new BinaryReader(fs))
@@ -67,6 +76,10 @@ namespace BasicProcessing
                     Header.fmtID = br.ReadBytes(4);
                     Header.fmtSize = br.ReadUInt32();
                     Header.format = br.ReadUInt16();
+                    if(Header.format != 1)
+                    {
+                        
+                    }
                     Header.channels = br.ReadUInt16();
                     Header.sampleRate = br.ReadUInt32();
                     Header.bytePerSec = br.ReadUInt32();
@@ -148,46 +161,14 @@ namespace BasicProcessing
                     if (bw != null) bw.Close();
                     if (fs != null) fs.Close();
                 }
-            }
-
-            ws = new WaveShow(lDataList, rDataList);
-            ws.Show();
-
-            string tmp;
-
-            StreamWriter kekkaout = new StreamWriter(fileout);
-            kekkaout.WriteLine("blockSize : " + Header.blockSize);
-            kekkaout.WriteLine("bps : " + Header.bytePerSec);
-            kekkaout.WriteLine("ch : " + Header.channels);
-            if (Header.dataID != null)
-            {
-                tmp = System.Text.Encoding.Unicode.GetString(Header.dataID);
-                kekkaout.WriteLine("dID : " + tmp);
-            }
-            kekkaout.WriteLine("dSize : " + Header.dataSize);
-            kekkaout.WriteLine("dmBit : " + Header.dimBit);
-            if (Header.fmtID != null)
-            {
-                tmp = System.Text.Encoding.Unicode.GetString(Header.fmtID);
-                kekkaout.WriteLine("fmtID : " + tmp);
-            }
-            kekkaout.WriteLine("fmtSize : " + Header.fmtSize);
-            kekkaout.WriteLine("format : " + Header.format);
-            if (Header.riffID != null)
-            {
-                tmp = System.Text.Encoding.Unicode.GetString(Header.riffID);
-                kekkaout.WriteLine("riffID : " + tmp);
-            }
-            kekkaout.WriteLine("samplingRate : " + Header.sampleRate);
-            kekkaout.WriteLine("size(-8bit) : " + Header.size);
-            kekkaout.WriteLine("wID : " + Header.wavID);
-            kekkaout.Close();
-
-            return;
+            }return;
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
+            WaveShow
+            ws = new WaveShow(lDataList, rDataList);
+            ws.Show();
         }
 
         private static void WriteFileContent(ref WavHeader Header, string fileout)
@@ -200,28 +181,31 @@ namespace BasicProcessing
             kekkaout.WriteLine("ch : " + Header.channels);
             if (Header.dataID != null)
             {
-                tmp = System.Text.Encoding.Unicode.GetString(Header.dataID);
+                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.dataID);
                 kekkaout.WriteLine("dID : " + tmp);
             }
             kekkaout.WriteLine("dSize : " + Header.dataSize);
             kekkaout.WriteLine("dmBit : " + Header.dimBit);
             if (Header.fmtID != null)
             {
-                tmp = System.Text.Encoding.Unicode.GetString(Header.fmtID);
+                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.fmtID);
                 kekkaout.WriteLine("fmtID : " + tmp);
             }
             kekkaout.WriteLine("fmtSize : " + Header.fmtSize);
             kekkaout.WriteLine("format : " + Header.format);
             if (Header.riffID != null)
             {
-                tmp = System.Text.Encoding.Unicode.GetString(Header.riffID);
+                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.riffID);
                 kekkaout.WriteLine("riffID : " + tmp);
             }
             kekkaout.WriteLine("samplingRate : " + Header.sampleRate);
             kekkaout.WriteLine("size(-8bit) : " + Header.size);
-            kekkaout.WriteLine("wID : " + Header.wavID);
+            if (Header.wavID != null)
+            {
+                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.wavID);
+                kekkaout.WriteLine("wavID : " + tmp);
+            }
             kekkaout.Close();
-
         }
     }
 }

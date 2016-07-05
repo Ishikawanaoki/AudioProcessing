@@ -21,19 +21,28 @@ namespace BasicProcessing
     {
         List<short> lDataList;
         List<short> rDataList;
+        private short lDataList1;
+        private short rDataList1;
+
         public WaveShow()
         {
             InitializeComponent();
         }
 
-        public WaveShow(List<short> left, List<short> right)
+        public WaveShow(List<short> lDataList1, List<short> rDataList1)
         {
             InitializeComponent();
-            this.lDataList = left;
-            this.rDataList = right;
+            this.lDataList = lDataList1;
+            this.rDataList = rDataList1;
 
             Plot();
             test();
+        }
+
+        public WaveShow(short lDataList1, short rDataList1)
+        {
+            this.lDataList1 = lDataList1;
+            this.rDataList1 = rDataList1;
         }
 
         private void WaveShow_Load(object sender, EventArgs e)
