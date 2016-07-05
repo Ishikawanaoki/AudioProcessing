@@ -11,6 +11,12 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace BasicProcessing
 {
+    /// <summary>
+    /// to show glaphical audio wave from .wav format, 
+    /// i use reading some tags for .wav.
+    /// than next to do is to compare over some signal and generate some.
+    /// than complete i-dft to be able to convert power spectol, is called f-domein, to limited  time-domein
+    /// </summary>
     public partial class WaveShow : Form
     {
         List<short> lDataList;
