@@ -51,11 +51,138 @@ using System.Threading.Tasks;
 namespace myfuntion
 {
     /// <summary>
+    /// グラフ表示する際の軸データを内部的に演算しています。
+    /// 全て、double型です。
+    /// はじめに、コンストラクタにより、標本数と標本化周波数を引数にして、
+    /// フィールドにはそれぞれの軸の一目盛り分の値が格納されてます。
+    /// </summary>
+    public class Axis
+    {
+        public double time;        // 時間軸領域の目盛り
+        public double frequency;   // 周波数軸領域の目盛り
+        public Axis(int sample_value, int sampling_frequency)
+        {
+            time = 1 / sampling_frequency;
+            frequency = sampling_frequency / sample_value;
+        }
+        public void doubleAxie(ref double[] x)
+        {
+            x[0] = frequency;
+            for (int i = 1; i < x.Length; i++)
+                x[i] = x[i - 1] + frequency;
+        }
+        public void strighAxie(ref string[] x)
+        {
+            int dimF = (int)frequency;
+            int[] x2 = new int[x.Length];
+            x2[0] = dimF;
+            x[0] = dimF.ToString();
+            for (int i = 1; i < x.Length; i++)
+            {
+                x2[i] = x2[i - 1] + dimF;
+                x[i] = x2[i].ToString();
+            }
+        }
+        public void intAxis(ref int[] x)
+        {
+            int dimF = (int)frequency;
+            x[0] = dimF;
+            for (int i = 1; i < x.Length; i++)
+                x[i] = x[i - 1] + dimF;
+        }
+    }
+    /// <summary>
     /// 内部処理決定部
     /// (主要)
     /// </summary>
     class myfunction
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static double[] seikika(double[] y)
+        {
+            double min = 0;
+            double max = 0;
+            foreach (double x in y)
+            {
+                if (min > x) min = x;
+                if (max < x) max = x;
+            }
+            max = max - min;
+            int i = 0;
+            foreach (double x2 in y)
+            {
+                //x2 = x2 / max * 100;]
+                y[i++] = x2 / max * 100;
+            }
+            return y;
+        }
+        /// <summary>
+        /// DFTを実行し、そしてグラフ描写をするテストクラスです
+        /// <para name = "sign">時間信号の複素数列</para>
+        /// <para name = "do_dft">結果である複素数列</para>
+        /// </summary>
+        public static double[] DoDFT(double[] y) //本体
+        {
+            Console.WriteLine("離散フーリエ変換を開始します");
+            Complex[] sign = new Complex[y.Length];
+            Complex[] do_dft = new Complex[y.Length];
+
+            double[] y_out = new double[y.Length];
+
+            for (int i = 0; i < y.Length; i++)
+            {
+                sign[i] = new Complex(y[i], 0);
+            }
+
+            do_dft = Fourier.DFT(sign);
+
+            for (int ii = 0; ii < y.Length; ii++)
+            {
+                y_out[ii] = do_dft[ii].magnitude;
+                y_out[ii] = Math.Log10(y_out[ii]) * 10;
+            }
+            Console.WriteLine("離散フーリエ変換を修了します");
+            return y_out;
+        }
+        public static double[] DoFFT(double[] y) //本体
+        {
+            // 要素数をチェックします。
+            int Lines = EnableLines(y.Length);
+            Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}",44100.0 / y.Length, 1 / 44100.0);
+
+            Console.WriteLine("高速フーリエ変換を開始します");
+            Complex[] sign = new Complex[Lines];
+            Complex[] do_dft = new Complex[Lines];
+
+            double[] y_out = new double[Lines];
+
+            for (int i = 0; i < Lines; i++)
+                sign[i] = new Complex(y[i], 0);
+
+
+            do_dft = Fourier.FFT(sign);
+
+            for (int ii = 0; ii < Lines; ii++)
+            {
+                y_out[ii] = do_dft[ii].magnitude;
+                y_out[ii] = Math.Log10(y_out[ii]) * 10;
+            }
+            Console.WriteLine("高速フーリエ変換を修了します");
+
+            return y_out;
+        }
+        private static int EnableLines(int length)
+        {
+            int LineValidCount = 1;
+            while (length >= LineValidCount) LineValidCount *= 2;
+            LineValidCount /= 2;
+            Console.WriteLine("ﾌｧｲﾙ内行数 = {0}\n有効行数 = {1}", length, LineValidCount);
+            return LineValidCount;
+        }
     }
 
     /// <summary>

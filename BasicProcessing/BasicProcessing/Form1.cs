@@ -17,8 +17,9 @@ namespace BasicProcessing
     public partial class Form1 : Form
     {
         private DataList data;
+        private string root = @".\";
         string[] IOFile;
-        string fileout;
+        string fileout; // ヘッダー情報
         public Form1()
         {
             InitializeComponent();
@@ -58,6 +59,7 @@ namespace BasicProcessing
         private void button2_Click(object sender, EventArgs e)
         {
             this.data = WavReader(IOFile[0], fileout);
+            label1.Text = IOFile[0];
             Console.WriteLine("読み出しが成功しました。");
                                WavWriter(IOFile[1], data);
             Console.WriteLine("書き出しが成功しました。");
@@ -90,8 +92,8 @@ namespace BasicProcessing
                 for (int i = 0; i < chArray3.Length; i++)
                     chArray3[i] = chArray2[i];
                 label1.Text = safeFileName;
-                string s = new string(chArray3);
-                IOFile[1] = s + "kekka_wav.txt";
+                root = new string(chArray3);
+                IOFile[1] = root + @"kekka\kekka_wav.txt";
             }
         }
     }

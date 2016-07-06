@@ -14,10 +14,9 @@ namespace BasicProcessing
     /// </summary>
     public partial class WaveShow : Form
     {
-        short[] lDataList;
-        short[] rDataList;
-        // private short lDataList1;
-        // private short rDataList1;
+        double[] lDataList;
+        double[] rDataList;
+        private string root = @".\";
 
         public WaveShow()
         {
@@ -27,15 +26,22 @@ namespace BasicProcessing
         public WaveShow(List<short> lDataList1, List<short> rDataList1)
         {
             InitializeComponent();
-            this.lDataList = lDataList1.ToArray();
-            this.rDataList = rDataList1.ToArray();
-            // 実行
+            short[] ltmp = lDataList1.ToArray();
+            short[] rtmp = rDataList1.ToArray();
+            lDataList = new double[ltmp.Length];
+            rDataList = new double[rtmp.Length];
+            for(int i=0; i<ltmp.Length; i++)
+            {
+                lDataList[i] = (double)ltmp[i];
+                rDataList[i] = (double)rtmp[i];
+            }
 
-            double[] tmp = new double[lDataList.Length];
-            int j = 0;
-            foreach (short i in lDataList) tmp[j++] = (double)i;
-            Plot(tmp, 1);
-            test(lDataList);
+            // 左側を処理します
+            
+            Plot(lDataList, 1);
+            //double[] tmp = myfunction.DoDFT(lDataList);
+            double[] tmp = myfunction.DoFFT(lDataList);
+            Plot(tmp, 2);
         }
         private void WaveShow_Load(object sender, EventArgs e)
         {
@@ -48,71 +54,240 @@ namespace BasicProcessing
         /// <param name="no">2つのchartを分別して、描写対象を決定できる</param>
         private void Plot(double[] y, int no)
         {
-            String gname = "sample";
-            int[] xValues = new int[y.Length];
+            Series seriesLine = new Series();
+            seriesLine.ChartType = SeriesChartType.Line; // 折れ線グラフ
+            seriesLine.LegendText = "Legend:Line";       // 凡例
+
+            string[] xValues = new string[y.Length/2];
+
+            myfuntion.Axis plot_axis = new myfuntion.Axis(y.Length, 44100);
+            plot_axis.strighAxie(ref xValues);
+
             switch (no) {
                 case 1:
+                    chart1.Titles.Clear();
                     chart1.Series.Clear();
-                    chart1.Series.Add(gname);
-                    chart1.Series[gname].ChartType = SeriesChartType.Line;
+                    chart1.ChartAreas.Clear();
+
+                    chart1.Series.Add("Area1");
+                    chart1.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
+                    chart1.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
+                    chart1.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
+                    
+                    chart1.Series["Area1"].ChartType = SeriesChartType.Line;
 
                     break;
                 case 2:
+                    chart2.Titles.Clear();
                     chart2.Series.Clear();
-                    chart2.Series.Add(gname);
-                    chart2.Series[gname].ChartType = SeriesChartType.Line;
+                    chart2.ChartAreas.Clear();
+
+                    chart2.Series.Add("Area2");
+                    chart2.ChartAreas.Add(new ChartArea("Area2"));            // ChartArea作成
+                    chart2.ChartAreas["Area2"].AxisX.Title = "周波数 f [Hz]";  // X軸タイトル設定
+                    chart2.ChartAreas["Area2"].AxisY.Title = "[/]";  // Y軸タイトル設定
+
+                    chart2.Series["Area2"].ChartType = SeriesChartType.Line;
                     break;
             }
+
+            // 正規化を行います
+            y = myfunction.seikika(y);
+
             for (int i = 0; i < xValues.Length; i++)
             {
-                //グラフに追加するデータクラスを生成
                 DataPoint dp = new DataPoint();
-                dp.SetValueXY(xValues[i], y[i]);  //XとYの値を設定
-                dp.IsValueShownAsLabel = false;  //グラフに値を表示するように指定
+                //グラフに追加するデータクラスを生成
                 switch (no)
                 {
                     case 1:
-                        chart1.Series[gname].Points.Add(dp);   //グラフにデータ追加
+                        dp.SetValueXY(xValues[i], y[i]);  //XとYの値を設定
+                        dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
+                        chart1.Series["Area1"].Points.Add(dp);   //グラフにデータ追加
                         break;
                     case 2:
-                        chart2.Series[gname].Points.Add(dp);   //グラフにデータ追加
+                        dp.SetValueXY(xValues[i], y[i]);  //XとYの値を設定
+                        dp.IsValueShownAsLabel = false;  //グラフに値を表示するように指定
+                        chart2.Series["Area2"].Points.Add(dp);   //グラフにデータ追加
                         break;
                 }
              }
+            label1.Text = "DTime : " + plot_axis.time.ToString();
+            label2.Text = "DFreq : " + plot_axis.frequency.ToString();
+
         }
         /// <summary>
-        /// DFTを実行し、そしてグラフ描写をするテストクラスです
-        /// <para name = "sign">時間信号の複素数列</para>
-        /// <para name = "do_dft">結果である複素数列</para>
+        /// LPF
         /// </summary>
-        private void test(short[] y) //本体
+        /// <param name="y"></param>
+        private void test2(double[] y)
         {
-            Complex[] sign = new Complex[y.Length];
-            Complex[] do_dft = new Complex[y.Length];
+            int dim = 2; //記憶幅
 
-            double seikika = 0;
-            double[] y_out = new double[y.Length];
-
-
-            for (int i = 0; i < y.Length; i++)
+            double[] time = new double[y.Length];
+            for(int i=0; i<dim; i++)
             {
-                sign[i] = new Complex((double)y[i], 0);
+                time[i] = y[i];
             }
-            
-            do_dft = Fourier.DFT(sign);
-
-            for (int ii = 0; ii < y.Length; ii++)
+            for(int i=dim; i<y.Length; i++)
             {
-                y_out[ii] = do_dft[ii].magnitude;
-                y_out[ii] = Math.Log10(y_out[ii]) * 10;
-                if (seikika < y_out[ii]) seikika = y_out[ii];
+                time[i] = 0.5*y[i] + 0.5*y[i - 2];
+            }
+            double[] spectrum = myfunction.DoFFT(time);
+
+            //描写開始
+            Console.WriteLine("描写を開始します");
+            Plot(time,1);
+            Plot(spectrum, 2);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine("ボタンが押されました。");
+            test2(lDataList);
+            Console.WriteLine("アクションが終了しました。");
+        }
+        /// <summary>
+        /// 現在のchar1を保存します。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button2_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PNG Image|*.png|JPeg Image|*.jpg";
+            saveFileDialog.InitialDirectory = this.root;
+            saveFileDialog.Title = "Save Chart As Image File";
+            saveFileDialog.FileName = "Sample.png";
+
+            DialogResult result = saveFileDialog.ShowDialog();
+            saveFileDialog.RestoreDirectory = true;
+
+            if (result == DialogResult.OK && saveFileDialog.FileName != "")
+            {
+                try
+                {
+                    if (saveFileDialog.CheckPathExists)
+                    {
+                        if (saveFileDialog.FilterIndex == 2)
+                        {
+                            chart1.SaveImage(saveFileDialog.FileName, ChartImageFormat.Jpeg);
+                        }
+                        else if (saveFileDialog.FilterIndex == 1)
+                        {
+                            chart1.SaveImage(saveFileDialog.FileName, ChartImageFormat.Png);
+                        }
+                        saveFileDialog.Dispose();
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Given Path does not exist");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
 
+            // SaveFileDialog の新しいインスタンスを生成する (デザイナから追加している場合は必要ない)
+            //SaveFileDialog saveFileDialog1 = new SaveFileDialog();
 
-            for (int iii = 0; iii < y.Length; iii++)
-                y_out[iii] = y_out[iii] / seikika * 100;
+            // ダイアログのタイトルを設定する
+            //saveFileDialog1.Title = "ここにダイアログのタイトルを書いてください";
 
-            Plot(y_out, 2);
+            // 初期表示するディレクトリを設定する
+            //saveFileDialog1.InitialDirectory = @"..\..\";
+
+            // 初期表示するファイル名を設定する
+            //saveFileDialog1.FileName = "ここに初期表示するファイル名を書いてください";
+
+            // ファイルのフィルタを設定する
+            //saveFileDialog1.Filter = "テキスト ファイル|*.txt;*.log|すべてのファイル|*.*";
+
+            // ファイルの種類 の初期設定を 2 番目に設定する (初期値 1)
+            //saveFileDialog1.FilterIndex = 2;
+
+            // ダイアログボックスを閉じる前に現在のディレクトリを復元する (初期値 false)
+            //saveFileDialog1.RestoreDirectory = true;
+
+            // [ヘルプ] ボタンを表示する (初期値 false)
+            //saveFileDialog1.ShowHelp = true;
+
+            // 存在しないファイルを指定した場合は、
+            // 新しく作成するかどうかの問い合わせを表示する (初期値 false)
+            //saveFileDialog1.CreatePrompt = true;
+
+            // 存在しているファイルを指定した場合は、
+            // 上書きするかどうかの問い合わせを表示する (初期値 true)
+            //saveFileDialog1.OverwritePrompt = true;
+
+            // 存在しないファイル名を指定した場合は警告を表示する (初期値 false)
+            //saveFileDialog1.CheckFileExists = true;
+
+            // 存在しないパスを指定した場合は警告を表示する (初期値 true)
+            //saveFileDialog1.CheckPathExists = true;
+
+            // 拡張子を指定しない場合は自動的に拡張子を付加する (初期値 true)
+            //saveFileDialog1.AddExtension = true;
+
+            // 有効な Win32 ファイル名だけを受け入れるようにする (初期値 true)
+            //saveFileDialog1.ValidateNames = true;
+
+            // ダイアログを表示し、戻り値が [OK] の場合は、選択したファイルを表示する
+            //if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            //{
+            //    MessageBox.Show(saveFileDialog1.FileName);
+            //}
+
+            // 不要になった時点で破棄する (正しくは オブジェクトの破棄を保証する を参照)
+            //saveFileDialog1.Dispose();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PNG Image|*.png|JPeg Image|*.jpg";
+            saveFileDialog.InitialDirectory = this.root;
+            saveFileDialog.Title = "Save Chart As Image File";
+            saveFileDialog.FileName = "Sample.png";
+
+            DialogResult result = saveFileDialog.ShowDialog();
+            saveFileDialog.RestoreDirectory = true;
+
+            if (result == DialogResult.OK && saveFileDialog.FileName != "")
+            {
+                try
+                {
+                    if (saveFileDialog.CheckPathExists)
+                    {
+                        if (saveFileDialog.FilterIndex == 2)
+                        {
+                            chart2.SaveImage(saveFileDialog.FileName, ChartImageFormat.Jpeg);
+                        }
+                        else if (saveFileDialog.FilterIndex == 1)
+                        {
+                            chart2.SaveImage(saveFileDialog.FileName, ChartImageFormat.Png);
+                        }
+                        saveFileDialog.Dispose();
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Given Path does not exist");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void WaveShow_Load_1(object sender, EventArgs e)
+        {
+
         }
     }
 }
