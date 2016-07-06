@@ -1,224 +1,98 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using static myfuntion.WaveReAndWr;
 
 namespace BasicProcessing
 {
+    /// <summary>
+    /// このクラスは初期状態であり何も表示しない。
+    /// <para name = data>
+    /// data とは、wavファイルの全情報を持つインスタンスであり、また、
+    /// 動的メソッドを呼ぶための一次格納庫、
+    /// クラスコンストラクタでは初期化されません。
+    /// 必ず新たなメソッドを作り、
+    /// 2つの静的なメソッドWavReader, WavWriterを呼び出してください。
+    /// button2はデフォルト操作</para>
+    /// </summary>
     public partial class Form1 : Form
     {
-        public DataList data;
-        public string[] s;
-        public string fileout;
+        private DataList data;
+        string[] IOFile;
+        string fileout;
         public Form1()
         {
             InitializeComponent();
-            s = new string[] {
+            data = new DataList();
+            IOFile = new string[2] {
                 @".\音ファイル\g1.wav",
                 @".\kekka_wav.txt" };
             fileout = @".\kekka_content_wav.txt";
-            data = exMain(s, fileout);
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
 
         }
-
-        public struct WavHeader
+        private void button1_Click_1(object sender, EventArgs e)
         {
-            public byte[] riffID; // "riff"
-            public uint size;  // ファイルサイズ-8
-            public byte[] wavID;  // "WAVE"
-            public byte[] fmtID;  // "fmt "
-            public uint fmtSize; // fmtチャンクのバイト数
-            public ushort format; // フォーマット
-            public ushort channels; // チャンネル数
-            public uint sampleRate; // サンプリングレート
-            public uint bytePerSec; // データ速度
-            public ushort blockSize; // ブロックサイズ
-            public ushort dimBit;  // 量子化ビット数
-            public byte[] dataID; // "data"
-            public uint dataSize; // 波形データのバイト数
-        }
-        public struct DataList
-        {
-            public List<short> lDataList;
-            public List<short> rDataList;
-            public WavHeader WavHeader;
-
-            public DataList(List<short> lDataList, List<short> rDataList, WavHeader WavHeader)
-            {
-                this.lDataList = lDataList;
-                this.rDataList = rDataList;
-                this.WavHeader = WavHeader;
-            }
+            ShowGlaph Glaph = new ShowGlaph(Show);
+            Glaph(data);
         }
 
         /// <summary>
-        /// このメソッドでは外部からでも呼び出せるように、静的とする
-        /// 処理の中断を明確にするために、状態を保存、のちにラベル表示できる。（未）
-        /// readerとwriterは分ける。（未）
-        /// 静的なメソッドでは、メソッド外とのオブジェクト参照は禁止される（要出典）
+        /// 別ウィンドウにグラフを表示するだけのデリゲート
         /// 
-        /// このrederとwriterに求めることは、新たなwavファイルの生成
+        /// デリゲート（委譲）により、
+        /// ボタン2の処理の最後にボタン1のハンドラーを追加することにて
+        /// waveファイルを読み込み、そして次のように遷移させたい
+        /// 　-> グラフ表示
+        /// 　-> 時間／周波数の処理を行う -> グラフ表示
+        /// 　-> etc
+        /// 色々考えたが、クラス変数としてデータDataListを持つしかないと考える。
+        /// やはり、データをフィールドとして持つには初期化が必要であり、
+        /// またそのためにはフィールドに入力パスと出力パスを持ってしかるべきだと考える。
         /// </summary>
-        /// <param name="args"></param>
-        /// <param name="fileout"></param>
-        static DataList exMain(string[] args, string fileout)
+        delegate void ShowGlaph(DataList datalist);
+
+        private void button2_Click(object sender, EventArgs e)
         {
-            WavHeader Header = new WavHeader();
-            List<short> lDataList = new List<short>();
-            List<short> rDataList = new List<short>();
+            this.data = WavReader(IOFile[0], fileout);
+            Console.WriteLine("読み出しが成功しました。");
+                               WavWriter(IOFile[1], data);
+            Console.WriteLine("書き出しが成功しました。");
 
-            using (FileStream fs = new FileStream(args[0], FileMode.Open, FileAccess.Read))
-            using (BinaryReader br = new BinaryReader(fs))
-            {
-                try
-                {
-                    Header.riffID = br.ReadBytes(4);
-                    Header.size = br.ReadUInt32();
-                    Header.wavID = br.ReadBytes(4);
-                    Header.fmtID = br.ReadBytes(4);
-                    Header.fmtSize = br.ReadUInt32();
-                    Header.format = br.ReadUInt16();
-                    if(Header.format != 1)
-                    {
-                        
-                    }
-                    Header.channels = br.ReadUInt16();
-                    Header.sampleRate = br.ReadUInt32();
-                    Header.bytePerSec = br.ReadUInt32();
-                    Header.blockSize = br.ReadUInt16();
-                    Header.dimBit = br.ReadUInt16();
-                    Header.dataID = br.ReadBytes(4);
-                    Header.dataSize = br.ReadUInt32();
-
-                    for (int i = 0; i < Header.dataSize / Header.blockSize; i++)
-                    {
-                        lDataList.Add((short)br.ReadUInt16());
-                        rDataList.Add((short)br.ReadUInt16());
-                    }
-                }
-                finally
-                {
-                    if (br != null)
-                    {
-                        br.Close();
-                    }
-                    if (fs != null)
-                    {
-                        fs.Close();
-                    }
-                }
-            }
-            Console.WriteLine(args[1] + "をオープンしました。");
-
-
-            //ここで加工（とりあえず素通り）
-
-            List<short> lNewDataList = lDataList;
-            List<short> rNewDataList = rDataList;
-
-            Header.dataSize = (uint)Math.Max(lNewDataList.Count, rNewDataList.Count) * 4;
-
-            using (FileStream fs = new FileStream(args[1], FileMode.Create, FileAccess.Write))
-            using (BinaryWriter bw = new BinaryWriter(fs))
-            {
-                try
-                {
-                    bw.Write(Header.riffID);
-                    bw.Write(Header.size);
-                    bw.Write(Header.wavID);
-                    bw.Write(Header.fmtID);
-                    bw.Write(Header.fmtSize);
-                    bw.Write(Header.format);
-                    bw.Write(Header.channels);
-                    bw.Write(Header.sampleRate);
-                    bw.Write(Header.bytePerSec);
-                    bw.Write(Header.blockSize);
-                    bw.Write(Header.dimBit);
-                    bw.Write(Header.dataID);
-                    bw.Write(Header.dataSize);
-
-                    for (int i = 0; i < Header.dataSize / Header.blockSize; i++)
-                    {
-                        if (i < lNewDataList.Count)
-                        {
-                            bw.Write((ushort)lNewDataList[i]);
-                        }
-                        else
-                        {
-                            bw.Write(0);
-                        }
-
-                        if (i < rNewDataList.Count)
-                        {
-                            bw.Write((ushort)rNewDataList[i]);
-                        }
-                        else
-                        {
-                            bw.Write(0);
-                        }
-                    }
-                }
-                finally
-                {
-                    if (bw != null) bw.Close();
-                    if (fs != null) fs.Close();
-                }
-            }
-            DataList exdata = new DataList(lDataList, rDataList, Header);
-            return exdata;
+            ShowGlaph Glaph = new ShowGlaph(Show);
+            Glaph(data);
+        }
+        static void Show(DataList datalist)
+        {
+            WaveShow show = new WaveShow(datalist.lDataList, datalist.rDataList);
+            show.Show();
         }
 
-        private static void WriteFileContent(WavHeader Header, string fileout)
+        private void button3_Click(object sender, EventArgs e)
         {
-            string tmp;
+            string safeFileName;
+            OpenFileDialog ofp = new OpenFileDialog();
+            DialogResult dr;        // OpenfileDialog の結果を dr に格納
+            dr = ofp.ShowDialog(this);
 
-            StreamWriter kekkaout = new StreamWriter(fileout);
-            kekkaout.WriteLine("blockSize : " + Header.blockSize);
-            kekkaout.WriteLine("bps : " + Header.bytePerSec);
-            kekkaout.WriteLine("ch : " + Header.channels);
-            if (Header.dataID != null)
-            {
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.dataID);
-                kekkaout.WriteLine("dID : " + tmp);
-            }
-            kekkaout.WriteLine("dSize : " + Header.dataSize);
-            kekkaout.WriteLine("dmBit : " + Header.dimBit);
-            if (Header.fmtID != null)
-            {
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.fmtID);
-                kekkaout.WriteLine("fmtID : " + tmp);
-            }
-            kekkaout.WriteLine("fmtSize : " + Header.fmtSize);
-            kekkaout.WriteLine("format : " + Header.format);
-            if (Header.riffID != null)
-            {
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.riffID);
-                kekkaout.WriteLine("riffID : " + tmp);
-            }
-            kekkaout.WriteLine("samplingRate : " + Header.sampleRate);
-            kekkaout.WriteLine("size(-8bit) : " + Header.size);
-            if (Header.wavID != null)
-            {
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.wavID);
-                kekkaout.WriteLine("wavID : " + tmp);
-            }
-            kekkaout.Close();
-        }
+            IOFile[0] = ofp.FileName;
 
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-            WaveShow ws = new WaveShow(data.lDataList, data.rDataList);
-            ws.Show();
+            safeFileName = ofp.SafeFileName;
+
+            if (dr == DialogResult.OK)
+            {
+                char[] chArray1 = safeFileName.ToCharArray();
+                char[] chArray2 = IOFile[0].ToCharArray();
+                char[] chArray3 = new char[chArray2.Length - chArray1.Length];
+                for (int i = 0; i < chArray3.Length; i++)
+                    chArray3[i] = chArray2[i];
+                label1.Text = safeFileName;
+                string s = new string(chArray3);
+                IOFile[1] = s + "kekka_wav.txt";
+            }
         }
     }
 }
