@@ -17,7 +17,7 @@ namespace BasicProcessing
     public partial class Form1 : Form
     {
         private DataList data;
-        private string root = @".\";
+        private string root = @"..\..\音ファイル";
         string[] IOFile;
         string fileout; // ヘッダー情報
         public Form1()
@@ -25,9 +25,11 @@ namespace BasicProcessing
             InitializeComponent();
             data = new DataList();
             IOFile = new string[2] {
-                @".\音ファイル\g1.wav",
-                @".\kekka_wav.txt" };
-            fileout = @".\kekka_content_wav.txt";
+                root + @"\a1.wav",
+                root + @"\kekka_wav.txt" };
+
+            // ヘッダー情報の出力先はWavReader内のifを有効にする
+            fileout = "";
 
         }
 
@@ -93,7 +95,7 @@ namespace BasicProcessing
                     chArray3[i] = chArray2[i];
                 label1.Text = safeFileName;
                 root = new string(chArray3);
-                IOFile[1] = root + @"kekka\kekka_wav.txt";
+                IOFile[1] = root + @"\kekka_wav.txt";
             }
         }
     }

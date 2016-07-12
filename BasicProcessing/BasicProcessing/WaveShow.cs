@@ -16,7 +16,7 @@ namespace BasicProcessing
     {
         double[] lDataList;
         double[] rDataList;
-        private string root = @".\";
+        private string root = @"..\..\音ファイル";
 
         public WaveShow()
         {
@@ -142,9 +142,9 @@ namespace BasicProcessing
         }
         private void test3()
         {
-            string arg = @"C:\Users\N.Ishikawa\Desktop\data\au\a1.wav";
-            string arg2 = @"C:\Users\N.Ishikawa\Desktop\data\sample\MAN01.KOE";
-            string fileout = @"C:\Users\N.Ishikawa\Desktop\data\sample\MAN01.KOE.wav";
+            string arg =        root + @"\a1.wav";
+            string arg2 =       root + @"\data\MAN01.KOE";
+            string fileout =    root + @"\data\MAN01.KOE.wav";
             WaveReAndWr.DataList dlist = WaveReAndWr.WavReader(arg, "");
             List<short> sample = dlist.lDataList;
 
@@ -152,10 +152,10 @@ namespace BasicProcessing
 
             if (data.Length > sample.Count) return;
 
-            for(int i=0; i<sample.Count; i++)
+            for (int i = 0; i < sample.Count; i++)
             {
-                    sample[i] = (short)data[i%data.Length];
-             }
+                sample[i] = (short)data[i % data.Length];
+            }
             foreach(short str in sample){
                 
             }
@@ -219,59 +219,6 @@ namespace BasicProcessing
                     MessageBox.Show(ex.Message);
                 }
             }
-
-            // SaveFileDialog の新しいインスタンスを生成する (デザイナから追加している場合は必要ない)
-            //SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-
-            // ダイアログのタイトルを設定する
-            //saveFileDialog1.Title = "ここにダイアログのタイトルを書いてください";
-
-            // 初期表示するディレクトリを設定する
-            //saveFileDialog1.InitialDirectory = @"..\..\";
-
-            // 初期表示するファイル名を設定する
-            //saveFileDialog1.FileName = "ここに初期表示するファイル名を書いてください";
-
-            // ファイルのフィルタを設定する
-            //saveFileDialog1.Filter = "テキスト ファイル|*.txt;*.log|すべてのファイル|*.*";
-
-            // ファイルの種類 の初期設定を 2 番目に設定する (初期値 1)
-            //saveFileDialog1.FilterIndex = 2;
-
-            // ダイアログボックスを閉じる前に現在のディレクトリを復元する (初期値 false)
-            //saveFileDialog1.RestoreDirectory = true;
-
-            // [ヘルプ] ボタンを表示する (初期値 false)
-            //saveFileDialog1.ShowHelp = true;
-
-            // 存在しないファイルを指定した場合は、
-            // 新しく作成するかどうかの問い合わせを表示する (初期値 false)
-            //saveFileDialog1.CreatePrompt = true;
-
-            // 存在しているファイルを指定した場合は、
-            // 上書きするかどうかの問い合わせを表示する (初期値 true)
-            //saveFileDialog1.OverwritePrompt = true;
-
-            // 存在しないファイル名を指定した場合は警告を表示する (初期値 false)
-            //saveFileDialog1.CheckFileExists = true;
-
-            // 存在しないパスを指定した場合は警告を表示する (初期値 true)
-            //saveFileDialog1.CheckPathExists = true;
-
-            // 拡張子を指定しない場合は自動的に拡張子を付加する (初期値 true)
-            //saveFileDialog1.AddExtension = true;
-
-            // 有効な Win32 ファイル名だけを受け入れるようにする (初期値 true)
-            //saveFileDialog1.ValidateNames = true;
-
-            // ダイアログを表示し、戻り値が [OK] の場合は、選択したファイルを表示する
-            //if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-            //{
-            //    MessageBox.Show(saveFileDialog1.FileName);
-            //}
-
-            // 不要になった時点で破棄する (正しくは オブジェクトの破棄を保証する を参照)
-            //saveFileDialog1.Dispose();
         }
 
         private void button3_Click(object sender, EventArgs e)

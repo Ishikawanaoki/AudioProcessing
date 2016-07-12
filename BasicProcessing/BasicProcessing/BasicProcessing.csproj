@@ -86,6 +86,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="音ファイル\data\MAN01.KOE" />
+    <None Include="音ファイル\data\WOMAN01.KOE" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -99,6 +101,7 @@
     <Content Include="音ファイル\c2.wav" />
     <Content Include="音ファイル\d1.wav" />
     <Content Include="音ファイル\d1s.wav" />
+    <Content Include="音ファイル\data\100Hz-2KAD.txt" />
     <Content Include="音ファイル\e1.wav" />
     <Content Include="音ファイル\f1.wav" />
     <Content Include="音ファイル\f1s.wav" />
