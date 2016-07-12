@@ -546,7 +546,7 @@ namespace myfuntion
 
 
             // trueなら、header情報の出力
-            if (true)
+            if (false)
             {
                 string tmp;
                 StreamWriter kekkaout = new StreamWriter(fileout);
@@ -631,6 +631,64 @@ namespace myfuntion
                     if (fs != null) fs.Close();
                 }
             }
+        }
+        public static double[] includeFile(string fileName)
+        {
+            string buf;
+            double aver, amax, sum, aby, seikika;
+            aver = 0; amax = 0; sum = 0; aby = 0; seikika = 0;
+            int Nmax = GetLinesOfTextFile(fileName);
+
+            //signal
+            double[] y = new double[Nmax];
+
+
+            System.IO.StreamReader koeFile = new System.IO.StreamReader(fileName);
+
+            for (int i = 0; i < Nmax; i++)
+            {
+                if (koeFile.Peek() == -1)    // ファイルの最後で有れば -1 を返す
+                    break;
+
+                buf = koeFile.ReadLine();
+
+                y[i] = Convert.ToDouble(buf);
+
+                sum += y[i];
+                if (amax < y[i]) amax = y[i];
+            }
+            koeFile.Close();
+            aver = sum / Nmax; sum = 0;
+            aby = amax;
+            for (int i = 0; i < Nmax; i++)
+            {
+                y[i] -= aver;
+                sum += y[i]; //　この最大値は、平均値を除去した後のもの【使わない】
+                if (aby > y[i]) aby = y[i];
+            }
+            seikika = aby * (-1);
+            if (seikika < amax) seikika = amax;
+            // seikika は正規化をするために、信号値の絶対値の最大値を格納
+            for (int i = 0; i < Nmax; i++)
+            {
+                y[i] = y[i] / seikika * 100;
+            }
+            return y;
+        }
+        public static int GetLinesOfTextFile(string fileName)
+        {
+            StreamReader StReader = new StreamReader(fileName);
+            int LineCount = 0; int LineValidCount = 2;
+            while (StReader.Peek() >= 0)
+            {
+                StReader.ReadLine();
+                LineCount++;
+            }
+            StReader.Close();
+            while (LineCount >= LineValidCount) LineValidCount *= 2;
+            LineValidCount /= 2;
+            Console.WriteLine("ﾌｧｲﾙ内行数 = {0}\n有効行数 = {1}", LineCount, LineValidCount);
+            return LineValidCount;
         }
     }
 }

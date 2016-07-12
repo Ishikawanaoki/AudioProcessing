@@ -140,11 +140,40 @@ namespace BasicProcessing
             Plot(time,1);
             Plot(spectrum, 2);
         }
+        private void test3()
+        {
+            string arg = @"C:\Users\N.Ishikawa\Desktop\data\au\a1.wav";
+            string arg2 = @"C:\Users\N.Ishikawa\Desktop\data\sample\MAN01.KOE";
+            string fileout = @"C:\Users\N.Ishikawa\Desktop\data\sample\MAN01.KOE.wav";
+            WaveReAndWr.DataList dlist = WaveReAndWr.WavReader(arg, "");
+            List<short> sample = dlist.lDataList;
+
+            double[] data = WaveReAndWr.includeFile(arg2);
+
+            if (data.Length > sample.Count) return;
+
+            for(int i=0; i<sample.Count; i++)
+            {
+                    sample[i] = (short)data[i%data.Length];
+             }
+            foreach(short str in sample){
+                
+            }
+
+
+            dlist.lDataList = sample;
+            dlist.rDataList = sample;
+
+            WaveReAndWr.WavWriter(fileout, dlist);
+
+
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            test2(lDataList);
+            //test2(lDataList);
+            test3();
             Console.WriteLine("アクションが終了しました。");
         }
         /// <summary>
