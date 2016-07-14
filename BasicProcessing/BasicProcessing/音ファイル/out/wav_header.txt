@@ -1,0 +1,13 @@
+riffID : RIFF
+88552
+wavID : WAVE
+fmtID : fmt 
+16
+1
+2
+44100
+176400
+4
+16
+dID : data
+885160

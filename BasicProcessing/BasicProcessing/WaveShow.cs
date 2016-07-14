@@ -144,27 +144,84 @@ namespace BasicProcessing
         {
             string arg =        root + @"\a1.wav";
             string arg2 =       root + @"\data\MAN01.KOE";
-            string fileout =    root + @"\data\MAN01.KOE.wav";
-            WaveReAndWr.DataList dlist = WaveReAndWr.WavReader(arg, "");
+            string fileout =    root + @"\out\MAN01.KOE.txt";
+            string fileout2 =   root + @"\out\MAN01.KOE.wav";
+            WaveReAndWr.DataList dlist = WaveReAndWr.WavReader(arg, fileout, false);
             List<short> sample = dlist.lDataList;
 
             double[] data = WaveReAndWr.includeFile(arg2);
 
             if (data.Length > sample.Count) return;
 
-            for (int i = 0; i < sample.Count; i++)
+            double tmp;
+            int i;
+            double max = 0;
+            for (i = 0; i < sample.Count; i++)
             {
-                sample[i] = (short)data[i % data.Length];
+                if (max < sample[i]) max = sample[i];
             }
-            foreach(short str in sample){
-                
+            Console.WriteLine("max = {0}", max);
+            for (i = 0; i < sample.Count; i++)
+            {
+                // 読み込んだwavのデータ数いっぱいに
+                // KOEファイルを繰り返し代入している。
+                // data列は100に正規化されているため、最大を
+                // wavファイルでの最大へ持っていく。
+                if (i % 70 == 0)
+                {
+                    tmp = data[i % data.Length] / 100 * max;
+                }
+                else tmp = 0;
+                // waveの一つのデータブロックが
+                // 16bit固定のため、やはり（データ入出）short、（演算）doubleが好ましい。
+                sample[i] = (short)tmp;
             }
-
 
             dlist.lDataList = sample;
             dlist.rDataList = sample;
 
-            WaveReAndWr.WavWriter(fileout, dlist);
+            WaveReAndWr.WavWriter(fileout2, dlist);
+        }
+        private void wave_generate_test()
+        {
+            // samplerate
+            // "100Hz-2KAD.txt"      : 2000
+            // "MAN01.KOE"           : 10000
+            // "WOMAN01.KOE"         : 10000
+            // defoult Wave format   : 44100
+            
+            // Nmaxは、データ数（標本の数）であり、ヘッダーに依存しないことを確認
+            // すなわち、読み込んだwaveファイルの整数倍に時間を延ばすことも可能である。
+
+            int Nmax;
+            int rate = 44100;
+
+
+            rate /= 2; // waverate = 22050 Hz
+            string arg = root + @"\a1.wav";
+            string fileout = root + @"\out\wavgene.wav";
+            WaveReAndWr.LittleDataList dlist = WaveReAndWr.LittleWavReader(arg);
+
+            Nmax = dlist.Nmax*10;
+            short[] data = new short[Nmax];
+
+
+            double[] func_out = myfunction2.DSP_Class.SquareWave(Nmax, rate);
+            Console.WriteLine("Nmax = {0}", Nmax);
+            
+            double div = Math.PI * 2 / Nmax * rate;
+            for (int i=0; i<Nmax; i++)
+            {
+                data[i] = (short)(func_out[i] * 16215);
+            }
+
+            // short => List<short>
+            List<short> sample = new List<short>();
+            sample.AddRange(data);
+            // Do Writing
+            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(sample, sample, dlist.WavHeader);
+            WaveReAndWr.WavWriter(fileout, datalist);
+
 
 
         }
@@ -173,7 +230,8 @@ namespace BasicProcessing
         {
             Console.WriteLine("ボタンが押されました。");
             //test2(lDataList);
-            test3();
+            //test3();
+            wave_generate_test();
             Console.WriteLine("アクションが終了しました。");
         }
         /// <summary>

@@ -26,10 +26,10 @@ namespace BasicProcessing
             data = new DataList();
             IOFile = new string[2] {
                 root + @"\a1.wav",
-                root + @"\kekka_wav.txt" };
+                root + @"\out\kekka_wav.txt" };
 
             // ヘッダー情報の出力先はWavReader内のifを有効にする
-            fileout = "";
+            fileout = root + @"\out\wav_header.txt";
 
         }
 
@@ -58,9 +58,14 @@ namespace BasicProcessing
         /// </summary>
         delegate void ShowGlaph(DataList datalist);
 
+        /// <summary>
+        /// "実行"ボタン挿入による処理以降。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
-            this.data = WavReader(IOFile[0], fileout);
+            data = WavReader(IOFile[0], fileout, true);
             label1.Text = IOFile[0];
             Console.WriteLine("読み出しが成功しました。");
                                WavWriter(IOFile[1], data);
@@ -95,7 +100,7 @@ namespace BasicProcessing
                     chArray3[i] = chArray2[i];
                 label1.Text = safeFileName;
                 root = new string(chArray3);
-                IOFile[1] = root + @"\kekka_wav.txt";
+                IOFile[1] = root + @"\" + safeFileName + ".txt";
             }
         }
     }

@@ -65,6 +65,12 @@ namespace myfuntion
             time = 1 / sampling_frequency;
             frequency = sampling_frequency / sample_value;
         }
+        public double[] get_div()
+        {
+            double[] axis = new double[2];
+            axis[0] = time; axis[1] = frequency;
+            return axis;
+        }
         public void doubleAxie(ref double[] x)
         {
             x[0] = frequency;
@@ -95,7 +101,7 @@ namespace myfuntion
     /// 内部処理決定部
     /// (主要)
     /// </summary>
-    class myfunction
+    public class myfunction
     {
         /// <summary>
         /// 
@@ -134,9 +140,7 @@ namespace myfuntion
             double[] y_out = new double[y.Length];
 
             for (int i = 0; i < y.Length; i++)
-            {
                 sign[i] = new Complex(y[i], 0);
-            }
 
             do_dft = Fourier.DFT(sign);
 
@@ -145,14 +149,14 @@ namespace myfuntion
                 y_out[ii] = do_dft[ii].magnitude;
                 y_out[ii] = Math.Log10(y_out[ii]) * 10;
             }
-            Console.WriteLine("離散フーリエ変換を修了します");
+            Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
         public static double[] DoFFT(double[] y) //本体
         {
             // 要素数をチェックします。
             int Lines = EnableLines(y.Length);
-            Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}",44100.0 / y.Length, 1 / 44100.0);
+            Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
 
             Console.WriteLine("高速フーリエ変換を開始します");
             Complex[] sign = new Complex[Lines];
@@ -171,7 +175,7 @@ namespace myfuntion
                 y_out[ii] = do_dft[ii].magnitude;
                 y_out[ii] = Math.Log10(y_out[ii]) * 10;
             }
-            Console.WriteLine("高速フーリエ変換を修了します");
+            Console.WriteLine("高速フーリエ変換を終了します");
 
             return y_out;
         }
@@ -180,7 +184,6 @@ namespace myfuntion
             int LineValidCount = 1;
             while (length >= LineValidCount) LineValidCount *= 2;
             LineValidCount /= 2;
-            Console.WriteLine("ﾌｧｲﾙ内行数 = {0}\n有効行数 = {1}", length, LineValidCount);
             return LineValidCount;
         }
     }
@@ -192,17 +195,7 @@ namespace myfuntion
     class Complex
     {
         public double real = 0.0;
-        public double imag = 0.0;
-
-
-        /// <summary>
-        /// コンストラクタです。
-        /// 引数なしの場合には初期化しません。
-        /// 普通呼びません。
-        /// </summary>
-        public Complex()
-        {
-        }
+        public double img = 0.0;
 
         /// <summary>
         /// フィールドへの初期化でず。
@@ -212,7 +205,7 @@ namespace myfuntion
         public Complex(double real, double img)
         {
             this.real = real;
-            this.imag = img;
+            this.img = img;
         }
 
         /// <summary>
@@ -222,7 +215,7 @@ namespace myfuntion
         /// <returns></returns>
         override public string ToString()
         {
-            string data = real.ToString() + "+" + imag.ToString() + "i";
+            string data = real.ToString() + "+" + img.ToString() + "i";
             return data;
         }
 
@@ -248,7 +241,7 @@ namespace myfuntion
         /// <returns></returns>
         public static Complex operator +(Complex a, Complex b)
         {
-            Complex data = new Complex(a.real + b.real, a.imag + b.imag);
+            Complex data = new Complex(a.real + b.real, a.img + b.img);
             return data;
         }
 
@@ -261,7 +254,7 @@ namespace myfuntion
         /// <returns></returns>
         public static Complex operator -(Complex a, Complex b)
         {
-            Complex data = new Complex(a.real - b.real, a.imag - b.imag);
+            Complex data = new Complex(a.real - b.real, a.img - b.img);
             return data;
         }
 
@@ -274,8 +267,8 @@ namespace myfuntion
         /// <returns></returns>
         public static Complex operator *(Complex a, Complex b)
         {
-            Complex data = new Complex((a.real * b.real) - (a.imag * b.imag),
-           (a.real * b.imag + (a.imag * b.real)));
+            Complex data = new Complex((a.real * b.real) - (a.img * b.img),
+           (a.real * b.img + (a.img * b.real)));
             return data;
         }
 
@@ -287,7 +280,7 @@ namespace myfuntion
         {
             get
             {
-                return Math.Sqrt(Math.Pow(real, 2) + Math.Pow(imag, 2));
+                return Math.Sqrt(Math.Pow(real, 2) + Math.Pow(img, 2));
             }
         }
 
@@ -298,7 +291,7 @@ namespace myfuntion
         {
             get
             {
-                return Math.Atan(imag / real); // アークタンジェントを返し、-n/2<=theta<=n/2となる値を返す
+                return Math.Atan(img / real); // アークタンジェントを返し、-n/2<=theta<=n/2となる値を返す
             }
         }
     }
@@ -399,14 +392,17 @@ namespace myfuntion
         /// <returns></returns>
         public static Complex[] FFT(Complex[] x)
         {
+            //初期宣言
             int N = x.Length;
             Complex[] X = new Complex[N];
             Complex[] d, D, e, E;
+            //例外処理
             if (N == 1)
             {
                 X[0] = x[0];
                 return X;
             }
+
             int k;
             e = new Complex[N / 2];
             d = new Complex[N / 2];
@@ -417,9 +413,11 @@ namespace myfuntion
             }
             D = FFT(d);
             E = FFT(e);
+            double d_theta = (-2) * Math.PI / N;
             for (k = 0; k < N / 2; k++)
             {
-                Complex temp = Complex.from_polar(1, -2 * Math.PI * k / N);
+                //Complex temp = Complex.from_polar(1, -2 * Math.PI * k / N);
+                Complex temp = Complex.from_polar(1, d_theta * k);
                 D[k] *= temp;
             }
             for (k = 0; k < N / 2; k++)
@@ -427,6 +425,12 @@ namespace myfuntion
                 X[k] = E[k] + D[k];
                 X[k + N / 2] = E[k] - D[k];
             }
+            return X;
+        }
+        public static Complex[] IFFT(Complex[] x)
+        {
+            int N = x.Length;
+            Complex[] X = new Complex[N];
             return X;
         }
     }
@@ -470,6 +474,9 @@ namespace myfuntion
             // bytePerSec := (sampleRate * dimBit * channels) / 8
             // blockSize  := (BitsPerSample * Channels) / 8
         }
+        /// <summary>
+        /// 
+        /// </summary>
         public struct DataList
         {
             public List<short> lDataList;
@@ -483,24 +490,79 @@ namespace myfuntion
                 this.WavHeader = WavHeader;
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        public struct LittleDataList
+        {
+            public int Nmax;
+            public WavHeader WavHeader;
+            public LittleDataList(int Nmax, WavHeader WavHeader)
+            {
+                this.Nmax = Nmax;
+                this.WavHeader = WavHeader;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public static LittleDataList LittleWavReader(string args)
+        {
+            WavHeader Header = new WavHeader();
+            List<short> lDataList = new List<short>();
+            List<short> rDataList = new List<short>();
+            // モノラル・データの総数
+            int Nmax = 0;
 
+            using (FileStream fs = new FileStream(args, FileMode.Open, FileAccess.Read))
+            using (System.IO.BinaryReader br = new BinaryReader(fs))
+            {
+                try
+                {
+                    Header.riffID = br.ReadBytes(4);
+                    Header.size = br.ReadUInt32();
+                    Header.wavID = br.ReadBytes(4);
+                    Header.fmtID = br.ReadBytes(4);
+                    Header.fmtSize = br.ReadUInt32();
+                    Header.format = br.ReadUInt16();
+                    Header.channels = br.ReadUInt16();
+                    Header.sampleRate = br.ReadUInt32();
+                    Header.bytePerSec = br.ReadUInt32();
+                    Header.blockSize = br.ReadUInt16();
+                    Header.dimBit = br.ReadUInt16();
+                    Header.dataID = br.ReadBytes(4);
+                    Header.dataSize = br.ReadUInt32();
+
+                    Nmax = Convert.ToInt32(Header.dataSize / Header.blockSize);
+                }
+                finally
+                {
+                    if (br != null) br.Close();
+                    if (fs != null) fs.Close();
+                }
+            }
+
+            LittleDataList data = new LittleDataList(Nmax, Header);
+            return data;
+        }
         /// <summary>
         /// このメソッドでは外部からでも呼び出せるように、静的とする
         /// 処理の中断を明確にするために、状態を保存、のちにラベル表示できる。（未）
         /// readerとwriterは分ける。（未）
         /// 静的なメソッドでは、メソッド外とのオブジェクト参照は禁止される（要出典）
-        /// 
         /// このrederとwriterに求めることは、新たなwavファイルの生成
         /// </summary>
-        /// <param name="args">
+        /// <param name="args"></param>
         /// 入力側のWaveファイル
         /// ここでの処理ではリニアPCMであるWaveファイルしか処理されません。
-        /// </param>
-        /// <param name="fileout">
+        /// <param name="fileout"></param>
         /// デフォルトのヘッダー情報の保存先
         /// if分岐が無効であれば適当な文字列でもよいです。
-        /// </param>
-        public static DataList WavReader(string args, string fileout)
+        /// <param name="flag"></param>
+        /// <returns></returns>
+        public static DataList WavReader(string args, string fileout, Boolean flag)
         {
             WavHeader Header = new WavHeader();
             List<short> lDataList = new List<short>();
@@ -546,7 +608,7 @@ namespace myfuntion
 
 
             // trueなら、header情報の出力
-            if (false)
+            if (flag)
             {
                 string tmp;
                 StreamWriter kekkaout = new StreamWriter(fileout);
@@ -574,6 +636,11 @@ namespace myfuntion
             return datalist;
 
         }
+        /// <summary>
+        /// ﾊﾞｲﾅﾘ書き込み先 args、DataListを引数
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="datalist"></param>
         public static void WavWriter(string args, DataList datalist)
         {
 
@@ -632,6 +699,13 @@ namespace myfuntion
                 }
             }
         }
+        /// <summary>
+        /// バイナリファイル fileName を読み込み、1行ずつ読み込み
+        /// その値をdouble配列で返却します。
+        /// データ列は最大値と比べたパーセント率を示します。
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         public static double[] includeFile(string fileName)
         {
             string buf;
@@ -675,6 +749,12 @@ namespace myfuntion
             }
             return y;
         }
+        /// <summary>
+        /// バイナリファイルの行数を取得し、
+        /// その値以下の最大の2の乗数を返します。
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         public static int GetLinesOfTextFile(string fileName)
         {
             StreamReader StReader = new StreamReader(fileName);
@@ -687,7 +767,6 @@ namespace myfuntion
             StReader.Close();
             while (LineCount >= LineValidCount) LineValidCount *= 2;
             LineValidCount /= 2;
-            Console.WriteLine("ﾌｧｲﾙ内行数 = {0}\n有効行数 = {1}", LineCount, LineValidCount);
             return LineValidCount;
         }
     }
