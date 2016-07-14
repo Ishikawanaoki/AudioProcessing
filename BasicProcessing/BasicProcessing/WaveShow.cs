@@ -120,25 +120,69 @@ namespace BasicProcessing
         /// LPF
         /// </summary>
         /// <param name="y"></param>
-        private void test2(double[] y)
+        private void test_try_ifft(double[] y, Boolean flag)
         {
-            int dim = 2; //記憶幅
-
-            double[] time = new double[y.Length];
-            for(int i=0; i<dim; i++)
+            WaveReAndWr.DataList dlist = new WaveReAndWr.DataList();
+            List<short> sample = new List<short>();
+            string fileout2 = root + @"\out\MAN01.KOE.wav";
+            double[] y_out = new double[y.Length];
+            //int dim = 2; //記憶幅
+            if (flag)
             {
-                time[i] = y[i];
-            }
-            for(int i=dim; i<y.Length; i++)
-            {
-                time[i] = 0.5*y[i] + 0.5*y[i - 2];
-            }
-            double[] spectrum = myfunction.DoFFT(time);
+                string arg = root + @"\a1.wav";
+                string fileout = root + @"\out\MAN01.KOE.txt";
 
+                dlist = WaveReAndWr.WavReader(arg, fileout, false);
+                sample = dlist.lDataList;
+                y_out = new double[sample.Count];
+                
+                for (int i = 0; i < sample.Count; i++)
+                {
+                    y_out[i] = sample[i];
+                } 
+            }
+
+            double[] time = y_out;
+            double[] retime= new double[y_out.Length];
+            //for(int i=0; i<dim; i++)
+            //{
+            //    time[i] = y[i];
+            //}
+            //for(int i=dim; i<y.Length; i++)
+            //{
+            //    time[i] = 0.5*y[i] + 0.5*y[i - 2];
+            //}
+            myfuntion.Complex[] tmp = new Complex[y_out.Length];
+            for (int i = 0; i < y_out.Length; i++)
+            {
+                tmp[i] = new Complex(y_out[i], 0);
+            }
+
+            myfuntion.Complex[]  tmp2 = Fourier.FFT(tmp);
+
+            tmp = Fourier.IFFT(tmp2);
+
+            for (int ii = 0; ii < tmp.Length; ii++)
+            {
+                retime[ii] = tmp[ii].magnitude;
+                retime[ii] = Math.Log10(retime[ii]) * 10;
+            }
             //描写開始
             Console.WriteLine("描写を開始します");
             Plot(time,1);
-            Plot(spectrum, 2);
+            Plot(retime, 2);
+
+            if (flag)
+            {
+                for (int i = 0; i < sample.Count; i++)
+                {
+                    sample[i] = (short)(retime[i]);
+                }
+                dlist.lDataList = sample;
+                dlist.rDataList = sample;
+
+                WaveReAndWr.WavWriter(fileout2, dlist);
+            }
         }
         private void test3()
         {
@@ -230,7 +274,7 @@ namespace BasicProcessing
         {
             Console.WriteLine("ボタンが押されました。");
             //test2(lDataList);
-            //test3();
+        
             wave_generate_test();
             Console.WriteLine("アクションが終了しました。");
         }
@@ -322,6 +366,13 @@ namespace BasicProcessing
         private void WaveShow_Load_1(object sender, EventArgs e)
         {
 
+        }
+
+        private void test_button_Click(object sender, EventArgs e)
+        {
+            string arg2 = root + @"\data\MAN01.KOE";
+            double[] data = WaveReAndWr.includeFile(arg2);
+            test_try_ifft(data,true);
         }
     }
 }

@@ -152,6 +152,11 @@ namespace myfuntion
             Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public static double[] DoFFT(double[] y) //本体
         {
             // 要素数をチェックします。
@@ -429,8 +434,43 @@ namespace myfuntion
         }
         public static Complex[] IFFT(Complex[] x)
         {
+            //初期宣言
             int N = x.Length;
             Complex[] X = new Complex[N];
+            Complex[] d, D, e, E;
+            //例外処理
+            if (N == 1)
+            {
+                X[0] = x[0];
+                return X;
+            }
+
+            int k;
+            e = new Complex[N / 2];
+            d = new Complex[N / 2];
+            for (k = 0; k < N / 2; k++)
+            {
+                e[k] = x[2 * k];
+                d[k] = x[2 * k + 1];
+            }
+            D = FFT(d);
+            E = FFT(e);
+            double d_theta = 2 * Math.PI / N;
+            for (k = 0; k < N / 2; k++)
+            {
+                Complex temp = Complex.from_polar(1, d_theta * k);
+                D[k] *= temp;
+            }
+            for (k = 0; k < N / 2; k++)
+            {
+                X[k] = E[k] + D[k];
+                X[k + N / 2] = E[k] - D[k];
+            }
+            for(k = 0; k < X.Length; k++)
+            {
+                X[k].real /= N;
+                X[k].img /= N;
+            }
             return X;
         }
     }
