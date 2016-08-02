@@ -7,6 +7,7 @@ using System.Windows.Forms.DataVisualization.Charting;
 namespace BasicProcessing
 {
     /// <summary>
+    /// 第２番目にあたるウィンドウ、および処理をここに記述する。
     /// to show glaphical audio wave from .wav format, 
     /// i use reading some tags for .wav.
     /// than next to do is to compare over some signal and generate some.
@@ -16,6 +17,7 @@ namespace BasicProcessing
     {
         double[] lDataList;
         double[] rDataList;
+        WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
 
         public WaveShow()
@@ -23,7 +25,7 @@ namespace BasicProcessing
             InitializeComponent();
         }
 
-        public WaveShow(List<short> lDataList1, List<short> rDataList1)
+        public WaveShow(List<short> lDataList1, List<short> rDataList1, WaveReAndWr.WavHeader header)
         {
             InitializeComponent();
             short[] ltmp = lDataList1.ToArray();
@@ -35,6 +37,7 @@ namespace BasicProcessing
                 lDataList[i] = (double)ltmp[i];
                 rDataList[i] = (double)rtmp[i];
             }
+            this.header = header;
 
             // 左側を処理します
             
@@ -48,6 +51,9 @@ namespace BasicProcessing
 
         }
         /// <summary>
+        /// グラフの二画面表示を行う。
+        /// 初期では左:時間領域、右:周波数領域で表示され、
+        /// 第二引数noによってグラフ位置の選択、グラフの更新を行う。
         /// 
         /// </summary>
         /// <param name="y">1列のデータを用いて、グラフ表示します。</param>
@@ -116,215 +122,36 @@ namespace BasicProcessing
             label2.Text = "DFreq : " + plot_axis.frequency.ToString();
 
         }
-        /// <summary>
-        /// LPF
-        /// </summary>
-        /// <param name="y"></param>
-        private void test_try_ifft(double[] y, Boolean flag)
-        {
-            WaveReAndWr.DataList dlist = new WaveReAndWr.DataList();
-            List<short> sample = new List<short>();
-            string fileout2 = root + @"\out\MAN01.KOE.wav";
-            double[] y_out = new double[y.Length];
-            //int dim = 2; //記憶幅
-            if (flag)
-            {
-                string arg = root + @"\a1.wav";
-                string fileout = root + @"\out\MAN01.KOE.txt";
-
-                dlist = WaveReAndWr.WavReader(arg, fileout, false);
-                sample = dlist.lDataList;
-                y_out = new double[sample.Count];
-                
-                for (int i = 0; i < sample.Count; i++)
-                {
-                    y_out[i] = sample[i];
-                } 
-            }
-
-            double[] time = y_out;
-            double[] retime= new double[y_out.Length];
-            //for(int i=0; i<dim; i++)
-            //{
-            //    time[i] = y[i];
-            //}
-            //for(int i=dim; i<y.Length; i++)
-            //{
-            //    time[i] = 0.5*y[i] + 0.5*y[i - 2];
-            //}
-            myfuntion.Complex[] tmp = new Complex[y_out.Length];
-            for (int i = 0; i < y_out.Length; i++)
-            {
-                tmp[i] = new Complex(y_out[i], 0);
-            }
-
-            myfuntion.Complex[]  tmp2 = Fourier.FFT(tmp);
-
-            tmp = Fourier.IFFT(tmp2);
-
-            for (int ii = 0; ii < tmp.Length; ii++)
-            {
-                retime[ii] = tmp[ii].magnitude;
-                retime[ii] = Math.Log10(retime[ii]) * 10;
-            }
-            //描写開始
-            Console.WriteLine("描写を開始します");
-            Plot(time,1);
-            Plot(retime, 2);
-
-            if (flag)
-            {
-                for (int i = 0; i < sample.Count; i++)
-                {
-                    sample[i] = (short)(retime[i]);
-                }
-                dlist.lDataList = sample;
-                dlist.rDataList = sample;
-
-                WaveReAndWr.WavWriter(fileout2, dlist);
-            }
-        }
-        private void test3()
-        {
-            string arg =        root + @"\a1.wav";
-            string arg2 =       root + @"\data\MAN01.KOE";
-            string fileout =    root + @"\out\MAN01.KOE.txt";
-            string fileout2 =   root + @"\out\MAN01.KOE.wav";
-            WaveReAndWr.DataList dlist = WaveReAndWr.WavReader(arg, fileout, false);
-            List<short> sample = dlist.lDataList;
-
-            double[] data = WaveReAndWr.includeFile(arg2);
-
-            if (data.Length > sample.Count) return;
-
-            double tmp;
-            int i;
-            double max = 0;
-            for (i = 0; i < sample.Count; i++)
-            {
-                if (max < sample[i]) max = sample[i];
-            }
-            Console.WriteLine("max = {0}", max);
-            for (i = 0; i < sample.Count; i++)
-            {
-                // 読み込んだwavのデータ数いっぱいに
-                // KOEファイルを繰り返し代入している。
-                // data列は100に正規化されているため、最大を
-                // wavファイルでの最大へ持っていく。
-                if (i % 70 == 0)
-                {
-                    tmp = data[i % data.Length] / 100 * max;
-                }
-                else tmp = 0;
-                // waveの一つのデータブロックが
-                // 16bit固定のため、やはり（データ入出）short、（演算）doubleが好ましい。
-                sample[i] = (short)tmp;
-            }
-
-            dlist.lDataList = sample;
-            dlist.rDataList = sample;
-
-            WaveReAndWr.WavWriter(fileout2, dlist);
-        }
-        private void wave_generate_test()
-        {
-            // samplerate
-            // "100Hz-2KAD.txt"      : 2000
-            // "MAN01.KOE"           : 10000
-            // "WOMAN01.KOE"         : 10000
-            // defoult Wave format   : 44100
-            
-            // Nmaxは、データ数（標本の数）であり、ヘッダーに依存しないことを確認
-            // すなわち、読み込んだwaveファイルの整数倍に時間を延ばすことも可能である。
-
-            int Nmax;
-            int rate = 44100;
-
-
-            rate /= 2; // waverate = 22050 Hz
-            string arg = root + @"\a1.wav";
-            string fileout = root + @"\out\wavgene.wav";
-            WaveReAndWr.LittleDataList dlist = WaveReAndWr.LittleWavReader(arg);
-
-            Nmax = dlist.Nmax*10;
-            short[] data = new short[Nmax];
-
-
-            double[] func_out = myfunction2.DSP_Class.SquareWave(Nmax, rate);
-            Console.WriteLine("Nmax = {0}", Nmax);
-            
-            double div = Math.PI * 2 / Nmax * rate;
-            for (int i=0; i<Nmax; i++)
-            {
-                data[i] = (short)(func_out[i] * 16215);
-            }
-
-            // short => List<short>
-            List<short> sample = new List<short>();
-            sample.AddRange(data);
-            // Do Writing
-            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(sample, sample, dlist.WavHeader);
-            WaveReAndWr.WavWriter(fileout, datalist);
-
-
-
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Console.WriteLine("ボタンが押されました。");
-            //test2(lDataList);
         
-            wave_generate_test();
-            Console.WriteLine("アクションが終了しました。");
-        }
         /// <summary>
-        /// 現在のchar1を保存します。
+        /// 現在のchar1を保存。
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "PNG Image|*.png|JPeg Image|*.jpg";
-            saveFileDialog.InitialDirectory = this.root;
-            saveFileDialog.Title = "Save Chart As Image File";
-            saveFileDialog.FileName = "Sample.png";
-
-            DialogResult result = saveFileDialog.ShowDialog();
-            saveFileDialog.RestoreDirectory = true;
-
-            if (result == DialogResult.OK && saveFileDialog.FileName != "")
-            {
-                try
-                {
-                    if (saveFileDialog.CheckPathExists)
-                    {
-                        if (saveFileDialog.FilterIndex == 2)
-                        {
-                            chart1.SaveImage(saveFileDialog.FileName, ChartImageFormat.Jpeg);
-                        }
-                        else if (saveFileDialog.FilterIndex == 1)
-                        {
-                            chart1.SaveImage(saveFileDialog.FileName, ChartImageFormat.Png);
-                        }
-                        saveFileDialog.Dispose();
-
-                    }
-                    else
-                    {
-                        MessageBox.Show("Given Path does not exist");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-            }
+            SaveFile sf = new SaveFile(DoSaveFile);
+            sf(1);
         }
 
+        /// <summary>
+        /// 現在のchar2を保存。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void button3_Click(object sender, EventArgs e)
         {
+            SaveFile sf = new SaveFile(DoSaveFile);
+            sf(2);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="no">chart No.{1 or 2}</param>
+        delegate void SaveFile(int no);
+        public void DoSaveFile(int no)
+        {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "PNG Image|*.png|JPeg Image|*.jpg";
             saveFileDialog.InitialDirectory = this.root;
@@ -340,14 +167,30 @@ namespace BasicProcessing
                 {
                     if (saveFileDialog.CheckPathExists)
                     {
-                        if (saveFileDialog.FilterIndex == 2)
+                        switch (no)
                         {
-                            chart2.SaveImage(saveFileDialog.FileName, ChartImageFormat.Jpeg);
+                            case 1:
+                                if (saveFileDialog.FilterIndex == 2)
+                                {
+                                    chart1.SaveImage(saveFileDialog.FileName, ChartImageFormat.Jpeg);
+                                }
+                                else if (saveFileDialog.FilterIndex == 1)
+                                {
+                                    chart1.SaveImage(saveFileDialog.FileName, ChartImageFormat.Png);
+                                }
+                                break;
+                            case 2:
+                                if (saveFileDialog.FilterIndex == 2)
+                                {
+                                    chart2.SaveImage(saveFileDialog.FileName, ChartImageFormat.Jpeg);
+                                }
+                                else if (saveFileDialog.FilterIndex == 1)
+                                {
+                                    chart2.SaveImage(saveFileDialog.FileName, ChartImageFormat.Png);
+                                }
+                                break;
                         }
-                        else if (saveFileDialog.FilterIndex == 1)
-                        {
-                            chart2.SaveImage(saveFileDialog.FileName, ChartImageFormat.Png);
-                        }
+                        
                         saveFileDialog.Dispose();
 
                     }
@@ -363,16 +206,75 @@ namespace BasicProcessing
             }
         }
 
-        private void WaveShow_Load_1(object sender, EventArgs e)
+        private System.Media.SoundPlayer player = null;
+        //WAVEファイルを再生する
+        private void PlaySound(string waveFile)
         {
+            //再生されているときは止める
+            if (player != null)
+                StopSound();
 
+            //読み込む
+            player = new System.Media.SoundPlayer(waveFile);
+            //非同期再生する
+            player.Play();
+
+            //次のようにすると、ループ再生される
+            //player.PlayLooping();
+
+            //次のようにすると、最後まで再生し終えるまで待機する
+            //player.PlaySync();
         }
 
+        //再生されている音を止める
+        private void StopSound()
+        {
+            if (player != null)
+            {
+                player.Stop();
+                player.Dispose();
+                player = null;
+            }
+        }
+        private void WaveShow_Load_1(object sender, EventArgs e)
+        {
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine("ボタンが押されました。");
+            Console.WriteLine("アクションが終了しました。");
+        }
         private void test_button_Click(object sender, EventArgs e)
         {
-            string arg2 = root + @"\data\MAN01.KOE";
-            double[] data = WaveReAndWr.includeFile(arg2);
-            test_try_ifft(data,true);
+            Console.WriteLine("ボタンが押されました。");
+            test_idft();
+            Console.WriteLine("アクションが終了しました。");
+        }
+        private void test_idft()
+        {
+            Complex[] tmp_f = myfunction.Manual_DoFFT(lDataList);
+            double[] tmp_t = myfunction.DoIDFT(tmp_f);
+            Plot(tmp_t, 2);
+
+            string fileout = root + @"\madesound.wav";
+            short[] ans = new short[tmp_t.Length * 4];
+            int count = 0;
+            short tmp = 0;
+            for(int i=0; i<ans.Length; i++)
+            {
+                if(i%4 == 0)
+                {
+                    ans[i] = (short)tmp_t[count++];
+                    tmp = ans[i];
+                }
+                ans[i] = tmp;
+            }
+            List<short> data = new List<short>();
+            data.AddRange(ans);
+            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, header);
+            WaveReAndWr.WavWriter(fileout, datalist);
+
+            //PlaySound(fileout);
         }
     }
 }

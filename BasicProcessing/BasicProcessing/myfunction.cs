@@ -152,6 +152,44 @@ namespace myfuntion
             Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
+        public static Complex[] Manual_DoDFT(double[] y) //本体
+        {
+            Console.WriteLine("離散フーリエ変換を開始します");
+            Complex[] sign = new Complex[y.Length];
+            Complex[] do_dft = new Complex[y.Length];
+
+            double[] y_out = new double[y.Length];
+
+            for (int i = 0; i < y.Length; i++)
+                sign[i] = new Complex(y[i], 0);
+
+            do_dft = Fourier.DFT(sign);
+
+            Console.WriteLine("離散フーリエ変換を終了します");
+            return do_dft;
+        }
+        /// <summary>
+        /// 複素数配列を引数として、逆フーリエ変換し、また時系列データをdouble型で返す。
+        /// </summary>
+        /// <param name="sign"></param>
+        /// <returns></returns>
+        public static double[] DoIDFT(Complex[] sign) //本体
+        {
+            Console.WriteLine("逆離散フーリエ変換を開始します");
+            Complex[] do_idft = new Complex[sign.Length];
+
+            double[] y_out = new double[sign.Length];
+            
+            do_idft = Fourier.IDFT(sign);
+
+            for (int i = 0; i < sign.Length; i++)
+            {
+                //y_out[i] = do_idft[i].magnitude;
+                y_out[i] = do_idft[i].real;
+            }
+            Console.WriteLine("離散フーリエ変換を終了します");
+            return y_out;
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -184,6 +222,27 @@ namespace myfuntion
 
             return y_out;
         }
+        public static Complex[] Manual_DoFFT(double[] y) //本体
+        {
+            // 要素数をチェックします。
+            int Lines = EnableLines(y.Length);
+            Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
+
+            Console.WriteLine("高速フーリエ変換を開始します");
+            Complex[] sign = new Complex[Lines];
+            Complex[] do_dft = new Complex[Lines];
+
+            double[] y_out = new double[Lines];
+
+            for (int i = 0; i < Lines; i++)
+                sign[i] = new Complex(y[i], 0);
+
+
+            do_dft = Fourier.FFT(sign);
+            Console.WriteLine("高速フーリエ変換を終了します");
+
+            return do_dft;
+        }
         private static int EnableLines(int length)
         {
             int LineValidCount = 1;
@@ -197,7 +256,7 @@ namespace myfuntion
     /// なんか難しい構造体です。
     /// フーリエ変換後の値を格納します。
     /// </summary>
-    class Complex
+    public class Complex
     {
         public double real = 0.0;
         public double img = 0.0;
@@ -276,7 +335,7 @@ namespace myfuntion
            (a.real * b.img + (a.img * b.real)));
             return data;
         }
-
+   
 
         /// <summary>
         /// 複素数同士の商
@@ -303,7 +362,9 @@ namespace myfuntion
 
 
     /// <summary>
-    /// 
+    ///  + enum WindowFunc : 窓関数オプション
+    ///  + double[] Windowing(double[] data, WindowFunc windowFunc)
+    ///  + Complex[] DFT(Complex[] x)
     /// </summary>
     class Fourier
     {
@@ -389,6 +450,28 @@ namespace myfuntion
             }
             return X;
         }
+        public static Complex[] IDFT(Complex[] x)
+        {
+            int N = x.Length;
+            Complex[] X = new Complex[N];
+            double d_theta = //(-2) * Math.PI / N;
+                2 * Math.PI / N;
+
+            // 以下、配列計算
+            for (int k = 0; k < N; k++)
+            {
+                X[k] = new Complex(0, 0);
+                for (int n = 0; n < N; n++)
+                {
+                    Complex temp = Complex.from_polar(1, d_theta * n * k);
+                    temp *= x[n]; //演算子 * はオーバーライドしたもの
+                    X[k] += temp; //演算子 + はオーバーライドしたもの
+                }
+                X[k].real /= N;
+                X[k].img /= N;
+            }
+            return X;
+        }
 
         /// <summary>
         /// 高速フーリエ変換
@@ -422,12 +505,23 @@ namespace myfuntion
             for (k = 0; k < N / 2; k++)
             {
                 //Complex temp = Complex.from_polar(1, -2 * Math.PI * k / N);
+		// k means -2*pi*( k / N ); k = 0 - N/2
+		// Exp(jm)*Exp(jn) 
+		// = Exp(j(m+n))
+
+		// 複素数を複素単位円上にあると考えると、偏角の任意自然数倍*nの意味
+		// ここでは回転子の意味
+		// fft の再帰呼び出しの式及び他者コードを比較する上では
+		// 引数の偶数と奇数に分けたD,E及びそれ以下の再帰における挙動を
+		// 確認する
                 Complex temp = Complex.from_polar(1, d_theta * k);
                 D[k] *= temp;
             }
             for (k = 0; k < N / 2; k++)
             {
+		// 偶数
                 X[k] = E[k] + D[k];
+		
                 X[k + N / 2] = E[k] - D[k];
             }
             return X;
@@ -474,7 +568,7 @@ namespace myfuntion
             return X;
         }
     }
-    class WaveReAndWr
+    public class WaveReAndWr
     {
         /// <summary>
         /// The header is used to provide specifications on the file type,
