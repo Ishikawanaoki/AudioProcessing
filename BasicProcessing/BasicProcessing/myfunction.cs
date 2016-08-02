@@ -190,6 +190,23 @@ namespace myfuntion
             Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
+        public static short[] Do_s_IDFT(Complex[] sign) //本体
+        {
+            Console.WriteLine("逆離散フーリエ変換を開始します");
+            Complex[] do_idft = new Complex[sign.Length];
+
+            short[] y_out = new short[sign.Length];
+
+            do_idft = Fourier.IDFT(sign);
+
+            for (int i = 0; i < sign.Length; i++)
+            {
+                //y_out[i] = do_idft[i].magnitude;
+                y_out[i] = (short)do_idft[i].real;
+            }
+            Console.WriteLine("離散フーリエ変換を終了します");
+            return y_out;
+        }
         /// <summary>
         /// 
         /// </summary>
