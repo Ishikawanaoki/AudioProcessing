@@ -28,19 +28,22 @@ namespace BasicProcessing
         public WaveShow(List<short> lDataList1, List<short> rDataList1, WaveReAndWr.WavHeader header)
         {
             InitializeComponent();
+            
             short[] ltmp = lDataList1.ToArray();
             short[] rtmp = rDataList1.ToArray();
+            // フィールドの初期化
             lDataList = new double[ltmp.Length];
             rDataList = new double[rtmp.Length];
-            for(int i=0; i<ltmp.Length; i++)
+
+            // 浮動小数点への変換
+            for (int i=0; i<ltmp.Length; i++)
             {
                 lDataList[i] = (double)ltmp[i];
                 rDataList[i] = (double)rtmp[i];
             }
             this.header = header;
-
-            // 左側を処理します
             
+            // 以下、左側を処理します
             Plot(lDataList, 1);
             //double[] tmp = myfunction.DoDFT(lDataList);
             double[] tmp = myfunction.DoFFT(lDataList);
@@ -252,8 +255,14 @@ namespace BasicProcessing
             test_idft();
             Console.WriteLine("アクションが終了しました。");
         }
+        /// <summary>
+        /// 秘匿なメソッド
+        /// (i) : 初期化時に描写された時系列デートの右に、dft->idftを通して得た結果を描写する
+        /// (ii) : 得られた時系列データを、4倍の時間に伸ばしてWaveへ書き込む
+        /// </summary>
         private void test_idft()
         {
+        //(i)
             Complex[] tmp_f = myfunction.Manual_DoFFT(lDataList);
             double[] tmp_t = myfunction.DoIDFT(tmp_f);
             Plot(tmp_t, 2);
@@ -262,6 +271,7 @@ namespace BasicProcessing
             short[] ans = new short[tmp_t.Length * 4];
             int count = 0;
             short tmp = 0;
+
             for(int i=0; i<ans.Length; i++)
             {
                 if(i%4 == 0)
@@ -271,6 +281,7 @@ namespace BasicProcessing
                 }
                 ans[i] = tmp;
             }
+
             List<short> data = new List<short>();
             data.AddRange(ans);
             WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, header);
@@ -334,8 +345,9 @@ namespace BasicProcessing
             //double[] tmp = myfunction.DoDFT(lDataList);
             //double[] spec = myfunction.DoFFT(ldata2);
 
-            double[] spec = complexAnalysc(ldata2, 100);
-            Plot(spec, 2);
+            //double[] ana = complexAnalysc(ldata2, 100);
+            lDataList = complexAnalysc(ldata2, 100);
+            Plot(lDataList, 2);
         }
         /// <summary>
         /// 短時間高速離散フーリエ変換を行う
@@ -381,6 +393,10 @@ namespace BasicProcessing
             Plot(sign2.ToArray(), 1);
 
             return ans_spec;
+        }
+        private void button4_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
