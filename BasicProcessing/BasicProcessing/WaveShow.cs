@@ -258,7 +258,7 @@ namespace BasicProcessing
         /// <summary>
         /// 秘匿なメソッド
         /// (i) : 初期化時に描写された時系列デートの右に、dft->idftを通して得た結果を描写する
-        /// (ii) : 得られた時系列データを、4倍の時間に伸ばしてWaveへ書き込む
+        /// (ii) : 得られた時系列データを、4倍の時間に伸ばして、short->double変換する
         /// </summary>
         private void test_idft()
         {
@@ -268,26 +268,36 @@ namespace BasicProcessing
             Plot(tmp_t, 2);
 
             string fileout = root + @"\madesound.wav";
-            short[] ans = new short[tmp_t.Length * 4];
+
+            Write(fileout, tmp_t);
+            //PlaySound(fileout);
+        }
+        /// <summary>
+        /// 任意の時系列データdataを、
+        /// 任意の出力先filenameへと保存する。
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="data"></param>
+        private void Write(string filename, double[] indata)
+        {
+            short[] ans = new short[indata.Length * 4];
             int count = 0;
             short tmp = 0;
 
-            for(int i=0; i<ans.Length; i++)
+            for (int i = 0; i < ans.Length; i++)
             {
-                if(i%4 == 0)
+                if (i % 4 == 0)
                 {
-                    ans[i] = (short)tmp_t[count++];
+                    ans[i] = (short)indata[count++];
                     tmp = ans[i];
                 }
                 ans[i] = tmp;
             }
 
             List<short> data = new List<short>();
-            data.AddRange(ans);
-            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, header);
-            WaveReAndWr.WavWriter(fileout, datalist);
-
-            //PlaySound(fileout);
+                data.AddRange(ans);
+            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, this.header);
+            WaveReAndWr.WavWriter(filename, datalist);
         }
         /// <summary>
         /// テストを行う対象を自動的に作るプログラム
@@ -339,13 +349,7 @@ namespace BasicProcessing
             tfilename = longbinarysample + "02.wav";
             tmp = new WaveReAndWr.DataList(ldata, rdata, header);
             WaveReAndWr.WavWriter(tfilename, tmp);
-
-
-            //Plot(ldata2, 1);
-            //double[] tmp = myfunction.DoDFT(lDataList);
-            //double[] spec = myfunction.DoFFT(ldata2);
-
-            //double[] ana = complexAnalysc(ldata2, 100);
+            
             lDataList = complexAnalysc(ldata2, 100);
             Plot(lDataList, 2);
         }
@@ -361,17 +365,20 @@ namespace BasicProcessing
         /// <param name="x"></param>
         /// <param name="j"></param>
         /// <returns></returns>
-        double[] complexAnalysc(double[] x, int j)
+        private double[] complexAnalysc(double[] x, int j)
         {
             int k = x.Length / j;
             double[] xx = new double[k];
             int count = 0;
             List<double> ans = new List<double>();
             Complex[] cmptmp;
-            List<short> sign = new List<short>();
-            List<double> sign2 = new List<double>();
+           // List<short> sign_s1 = new List<short>();
+            List<double> sign_d1 = new List<double>();
             double[] ans_spec;
-            
+
+            //List<short> sign_s2 = new List<short>();
+            List<double> sign_d2 = new List<double>();
+
             for (int n = 0; n<j; n++)
             {
                 for(int m = 0; m<k; m++)
@@ -384,17 +391,104 @@ namespace BasicProcessing
 
                 cmptmp = myfunction.Manual_DoDFT(xx);
 
-                sign2.AddRange(myfunction.DoIDFT(cmptmp));
-                sign.AddRange(myfunction.Do_s_IDFT(cmptmp));
+                sign_d1.AddRange(myfunction.DoIDFT(cmptmp));
+                //sign_s1.AddRange(myfunction.Do_s_IDFT(cmptmp));
+
+
+                int rank = 5;
+                Complex[] max = new Complex[5];
+                for (int i = 0; i < rank; i++)
+                    max[i] = new Complex(0, 0);
+
+                double tmp = 0;
+                for (int i = 0; i<cmptmp.Length; i++)
+                {
+                    tmp = cmptmp[i].magnitude;
+                    if (max[4].magnitude < tmp)
+                    {
+                        max[4] = cmptmp[i];
+                    }
+                    else if(max[3].magnitude < tmp)
+                    {
+                        max[3] = cmptmp[i];
+                    }
+                    else if (max[2].magnitude < tmp)
+                    {
+                        max[2] = cmptmp[i];
+                    }
+                    else if (max[1].magnitude < tmp)
+                    {
+                        max[1] = cmptmp[i];
+                    }
+                    else if (max[0].magnitude < tmp)
+                    {
+                        max[0] = cmptmp[i];
+                    }
+                }
+                for (int i = 0; i<cmptmp.Length; i++)
+                {
+                    tmp = cmptmp[i].magnitude;
+                    if (max[4].magnitude == tmp)
+                    {
+                        cmptmp[i] = max[4];
+                    }
+                    else if(max[3].magnitude == tmp)
+                    {
+                        cmptmp[i] = max[3];
+                    }
+                    else if (max[2].magnitude == tmp)
+                    {
+                        cmptmp[i] = max[2];
+                    }
+                    else if (max[1].magnitude == tmp)
+                    {
+                        cmptmp[i] = max[1];
+                    }
+                    else if (max[0].magnitude == tmp)
+                    {
+                        cmptmp[i] = max[0];
+                    }
+                    else
+                    {
+                        cmptmp[i] = new Complex(0, 0);
+                    } 
+                }
+                sign_d2.AddRange(myfunction.DoIDFT(cmptmp));
+                //sign_s2.AddRange(myfunction.Do_s_IDFT(cmptmp));
             }
 
             ans_spec = ans.ToArray();
 
-            Plot(sign2.ToArray(), 1);
+            Plot(sign_d1.ToArray(), 1);
+
+            string normalOutput = root + @"\normalOutput.wav";
+            string rankedOutput = root + @"\rankedOutput.wav";
+            Write(normalOutput, sign_d1.ToArray());
+            Write(rankedOutput, sign_d2.ToArray());
 
             return ans_spec;
         }
         private void button4_Click(object sender, EventArgs e)
+        {
+            string safeFileName;
+            OpenFileDialog ofp = new OpenFileDialog();
+            DialogResult dr;        // OpenfileDialog の結果を dr に格納
+            dr = ofp.ShowDialog(this);
+
+            safeFileName = ofp.SafeFileName;
+
+            if (dr == DialogResult.OK)
+            {
+                label3.Text = safeFileName;
+            }
+
+            safeFileName = root + "\\" + safeFileName;
+            WaveReAndWr.DataList data = WaveReAndWr.WavReader(safeFileName, "", false);
+
+
+        }
+
+        private void label3_Click(object sender, EventArgs e)
         {
 
         }

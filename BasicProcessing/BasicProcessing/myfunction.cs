@@ -133,7 +133,7 @@ namespace myfuntion
         /// </summary>
         public static double[] DoDFT(double[] y) //本体
         {
-            Console.WriteLine("離散フーリエ変換を開始します");
+            //Console.WriteLine("離散フーリエ変換を開始します");
             Complex[] sign = new Complex[y.Length];
             Complex[] do_dft = new Complex[y.Length];
 
@@ -149,12 +149,12 @@ namespace myfuntion
                 y_out[ii] = do_dft[ii].magnitude;
                 y_out[ii] = Math.Log10(y_out[ii]) * 10;
             }
-            Console.WriteLine("離散フーリエ変換を終了します");
+            //Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
         public static Complex[] Manual_DoDFT(double[] y) //本体
         {
-            Console.WriteLine("離散フーリエ変換を開始します");
+            //Console.WriteLine("離散フーリエ変換を開始します");
             Complex[] sign = new Complex[y.Length];
             Complex[] do_dft = new Complex[y.Length];
 
@@ -165,7 +165,7 @@ namespace myfuntion
 
             do_dft = Fourier.DFT(sign);
 
-            Console.WriteLine("離散フーリエ変換を終了します");
+            //Console.WriteLine("離散フーリエ変換を終了します");
             return do_dft;
         }
         /// <summary>
@@ -175,7 +175,7 @@ namespace myfuntion
         /// <returns></returns>
         public static double[] DoIDFT(Complex[] sign) //本体
         {
-            Console.WriteLine("逆離散フーリエ変換を開始します");
+            //Console.WriteLine("逆離散フーリエ変換を開始します");
             Complex[] do_idft = new Complex[sign.Length];
 
             double[] y_out = new double[sign.Length];
@@ -187,12 +187,12 @@ namespace myfuntion
                 //y_out[i] = do_idft[i].magnitude;
                 y_out[i] = do_idft[i].real;
             }
-            Console.WriteLine("離散フーリエ変換を終了します");
+            //Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
         public static short[] Do_s_IDFT(Complex[] sign) //本体
         {
-            Console.WriteLine("逆離散フーリエ変換を開始します");
+            //Console.WriteLine("逆離散フーリエ変換を開始します");
             Complex[] do_idft = new Complex[sign.Length];
 
             short[] y_out = new short[sign.Length];
@@ -204,7 +204,7 @@ namespace myfuntion
                 //y_out[i] = do_idft[i].magnitude;
                 y_out[i] = (short)do_idft[i].real;
             }
-            Console.WriteLine("離散フーリエ変換を終了します");
+            //Console.WriteLine("離散フーリエ変換を終了します");
             return y_out;
         }
         /// <summary>
@@ -216,9 +216,9 @@ namespace myfuntion
         {
             // 要素数をチェックします。
             int Lines = EnableLines(y.Length);
-            Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
+            //Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
 
-            Console.WriteLine("高速フーリエ変換を開始します");
+            //Console.WriteLine("高速フーリエ変換を開始します");
             Complex[] sign = new Complex[Lines];
             Complex[] do_dft = new Complex[Lines];
 
@@ -235,7 +235,7 @@ namespace myfuntion
                 y_out[ii] = do_dft[ii].magnitude;
                 y_out[ii] = Math.Log10(y_out[ii]) * 10;
             }
-            Console.WriteLine("高速フーリエ変換を終了します");
+            //Console.WriteLine("高速フーリエ変換を終了します");
 
             return y_out;
         }
@@ -243,9 +243,9 @@ namespace myfuntion
         {
             // 要素数をチェックします。
             int Lines = EnableLines(y.Length);
-            Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
+            //Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
 
-            Console.WriteLine("高速フーリエ変換を開始します");
+            //Console.WriteLine("高速フーリエ変換を開始します");
             Complex[] sign = new Complex[Lines];
             Complex[] do_dft = new Complex[Lines];
 
@@ -256,7 +256,7 @@ namespace myfuntion
 
 
             do_dft = Fourier.FFT(sign);
-            Console.WriteLine("高速フーリエ変換を終了します");
+            //Console.WriteLine("高速フーリエ変換を終了します");
 
             return do_dft;
         }

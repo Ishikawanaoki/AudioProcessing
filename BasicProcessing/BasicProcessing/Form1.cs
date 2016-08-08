@@ -68,7 +68,7 @@ namespace BasicProcessing
         /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
-            DataList data = WavReader(IOFile[0], fileout, true);
+            DataList data = WavReader(IOFile[0], fileout, false);
             label1.Text = IOFile[0];
             Console.WriteLine("読み出しが成功しました。");
 
