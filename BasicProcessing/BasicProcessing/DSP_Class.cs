@@ -198,6 +198,15 @@ namespace myfunction2
             return comToTime(ans.ToArray(), j);
             
         }
+        /// <summary>
+        /// 「任意の周波数の正弦波を創りだす」
+        /// これを呼び出すメソッド、つまり前段のメソッドにより、
+        /// 任意にスペクトルを減らしたデータが x となる。
+        /// 
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="j"></param>
+        /// <returns></returns>
         public double[] comToTime(Complex[] x, int j)
         {
             int k = x.Length / j;
@@ -208,16 +217,25 @@ namespace myfunction2
 
             for (int n = 0; n < j; n++)
             {
-                for (int m = 0; m < k; m++)
-                {
-                    cmptmp[m] = x[count++];
-                }
+                for (int m = 0; m < k; m++) cmptmp[m] = x[count++];
+
                 if (count > x.Length) break;
 
                 sign_data.AddRange(myfunction.DoIDFT(cmptmp));
             }
 
             double[] ans = sign_data.ToArray();
+            return ans;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="j"></param>
+        /// <returns></returns>
+        public double[] comToGenSignal(Complex[] x, int j)
+        {
+            double[] ans = new double[x.Length];
             return ans;
         }
     }

@@ -270,6 +270,60 @@ namespace BasicProcessing
             initsample();
             Console.WriteLine("アクションが終了しました。");
         }
+        /// <summary>
+        /// テストを行う対象を自動的に作るプログラム
+        /// </summary>
+        public void initsample()
+        {
+            // データ列リストの宣言、初期化
+            List<short> ldata = new List<short>();
+            List<short> rdata = new List<short>();
+            // テスト対象ファイル名
+            string longbinarysample = root + @"\bsample";
+            // 空の文字列
+            string tfilename = "";
+            string[] InFile = new string[]
+            {
+                @"..\..\音ファイル\a1.wav",//@"..\..\音ファイル\a1s.wav",
+                @"..\..\音ファイル\b1.wav",
+                @"..\..\音ファイル\c1.wav",//@"..\..\音ファイル\c1s.wav",@"..\..\音ファイル\c2.wav",
+                @"..\..\音ファイル\d1.wav",//@"..\..\音ファイル\d1s.wav",
+                @"..\..\音ファイル\e1.wav",
+                @"..\..\音ファイル\f1.wav",//@"..\..\音ファイル\f1s.wav",
+                @"..\..\音ファイル\g1.wav"//,@"..\..\音ファイル\g1s.wav"
+            };
+            WaveReAndWr.DataList tmp;
+            for (int i = 0; i < InFile.Length; i++)
+            {
+                tmp = WaveReAndWr.WavReader(InFile[i], "", false);
+                ldata.AddRange(tmp.lDataList);
+                rdata.AddRange(tmp.rDataList);
+                if (i == 0) this.header = tmp.WavHeader;
+            }
+            tfilename = longbinarysample + "01.wav";
+            tmp = new WaveReAndWr.DataList(ldata, rdata, header);
+            WaveReAndWr.WavWriter(tfilename, tmp);
+
+            double[] ldata2 = new double[ldata.Count];
+            double[] rdata2 = new double[rdata.Count];
+            for (int ii = 0; ii < ldata.Count; ii++)
+            {
+                ldata2[ii] = ldata[ii];
+                rdata2[ii] = rdata[ii];
+            }
+            ldata2 = myfunction.seikika(ldata2);
+            rdata2 = myfunction.seikika(rdata2);
+
+            //PlaySound(tfilename);
+            for (int iii = 0; iii < ldata2.Length; iii++)
+            {
+                ldata[iii] = (short)ldata2[iii];
+                rdata[iii] = (short)rdata2[iii];
+            }
+            tfilename = longbinarysample + "02.wav";
+            tmp = new WaveReAndWr.DataList(ldata, rdata, header);
+            WaveReAndWr.WavWriter(tfilename, tmp);
+        }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
@@ -321,178 +375,7 @@ namespace BasicProcessing
             WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, this.header);
             WaveReAndWr.WavWriter(filename, datalist);
         }
-        /// <summary>
-        /// テストを行う対象を自動的に作るプログラム
-        /// </summary>
-        public void initsample()
-        {
-            // データ列リストの宣言、初期化
-            List<short> ldata = new List<short>();
-            List<short> rdata = new List<short>();
-            // テスト対象ファイル名
-            string longbinarysample = root + @"\bsample";
-            // 空の文字列
-            string tfilename = "";
-            string[] InFile = new string[]
-            {
-                @"..\..\音ファイル\a1.wav",//@"..\..\音ファイル\a1s.wav",
-                @"..\..\音ファイル\b1.wav",
-                @"..\..\音ファイル\c1.wav",//@"..\..\音ファイル\c1s.wav",@"..\..\音ファイル\c2.wav",
-                @"..\..\音ファイル\d1.wav",//@"..\..\音ファイル\d1s.wav",
-                @"..\..\音ファイル\e1.wav",
-                @"..\..\音ファイル\f1.wav",//@"..\..\音ファイル\f1s.wav",
-                @"..\..\音ファイル\g1.wav"//,@"..\..\音ファイル\g1s.wav"
-            };
-            WaveReAndWr.DataList tmp;
-            for(int i=0; i<InFile.Length; i++)
-            {
-                tmp = WaveReAndWr.WavReader(InFile[i], "", false);
-                ldata.AddRange(tmp.lDataList);
-                rdata.AddRange(tmp.rDataList);
-                if (i == 0) this.header = tmp.WavHeader;
-            }
-            tfilename = longbinarysample + "01.wav";
-            tmp = new WaveReAndWr.DataList(ldata, rdata, header);
-            WaveReAndWr.WavWriter(tfilename, tmp);
-
-            double[] ldata2 = new double[ldata.Count];
-            double[] rdata2 = new double[rdata.Count];
-            for (int ii = 0; ii < ldata.Count; ii++)
-            {
-                ldata2[ii] = ldata[ii];
-                rdata2[ii] = rdata[ii];
-            }
-            ldata2 = myfunction.seikika(ldata2);
-            rdata2 = myfunction.seikika(rdata2);
-
-            //PlaySound(tfilename);
-            for(int iii=0; iii<ldata2.Length; iii++)
-            {
-                ldata[iii] = (short)ldata2[iii];
-                rdata[iii] = (short)rdata2[iii];
-            }
-            tfilename = longbinarysample + "02.wav";
-            tmp = new WaveReAndWr.DataList(ldata, rdata, header);
-            WaveReAndWr.WavWriter(tfilename, tmp);
-            
-            lDataList = complexAnalysc(ldata2, 100);
-            Plot(lDataList, 2);
-        }
-        /// <summary>
-        /// 短時間高速離散フーリエ変換を行う
-        /// 
-        /// Nmax = x.Length
-        /// Nmax = k * j
-        /// x[Nmax] => xx[k][j];
-        /// short time = 0 ~ k
-        /// j : 分割数
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="j"></param>
-        /// <returns></returns>
-        double[] complexAnalysc(double[] x, int j)
-        {
-            int k = x.Length / j;
-            double[] xx = new double[k];
-            int count = 0;
-            List<double> ans = new List<double>();
-            Complex[] cmptmp;
-            // List<short> sign_s1 = new List<short>();
-            List<double> sign_d1 = new List<double>();
-            double[] ans_spec;
-
-            //List<short> sign_s2 = new List<short>();
-            List<double> sign_d2 = new List<double>();
-
-            for (int n = 0; n < j; n++)
-            {
-                for (int m = 0; m < k; m++)
-                {
-                    xx[m] = x[count++];
-                }
-                if (count > x.Length) break;
-                xx = Fourier.Windowing(xx, Fourier.WindowFunc.Hamming);
-                ans.AddRange(myfunction.DoFFT(xx));
-
-                cmptmp = myfunction.Manual_DoDFT(xx);
-
-                sign_d1.AddRange(myfunction.DoIDFT(cmptmp));
-                //sign_s1.AddRange(myfunction.Do_s_IDFT(cmptmp));
-
-
-                int rank = 5;
-                Complex[] max = new Complex[5];
-                for (int i = 0; i < rank; i++)
-                    max[i] = new Complex(0, 0);
-
-                double tmp = 0;
-                for (int i = 0; i < cmptmp.Length; i++)
-                {
-                    tmp = cmptmp[i].magnitude;
-                    if (max[4].magnitude < tmp)
-                    {
-                        max[4] = cmptmp[i];
-                    }
-                    else if (max[3].magnitude < tmp)
-                    {
-                        max[3] = cmptmp[i];
-                    }
-                    else if (max[2].magnitude < tmp)
-                    {
-                        max[2] = cmptmp[i];
-                    }
-                    else if (max[1].magnitude < tmp)
-                    {
-                        max[1] = cmptmp[i];
-                    }
-                    else if (max[0].magnitude < tmp)
-                    {
-                        max[0] = cmptmp[i];
-                    }
-                }
-                for (int i = 0; i < cmptmp.Length; i++)
-                {
-                    tmp = cmptmp[i].magnitude;
-                    if (max[4].magnitude == tmp)
-                    {
-                        cmptmp[i] = max[4];
-                    }
-                    else if (max[3].magnitude == tmp)
-                    {
-                        cmptmp[i] = max[3];
-                    }
-                    else if (max[2].magnitude == tmp)
-                    {
-                        cmptmp[i] = max[2];
-                    }
-                    else if (max[1].magnitude == tmp)
-                    {
-                        cmptmp[i] = max[1];
-                    }
-                    else if (max[0].magnitude == tmp)
-                    {
-                        cmptmp[i] = max[0];
-                    }
-                    else
-                    {
-                        cmptmp[i] = new Complex(0, 0);
-                    }
-                }
-                sign_d2.AddRange(myfunction.DoIDFT(cmptmp));
-                //sign_s2.AddRange(myfunction.Do_s_IDFT(cmptmp));
-            }
-
-            ans_spec = ans.ToArray();
-
-            Plot(sign_d1.ToArray(), 1);
-
-            string normalOutput = root + @"\normalOutput.wav";
-            string rankedOutput = root + @"\rankedOutput.wav";
-            Write(normalOutput, sign_d1.ToArray());
-            Write(rankedOutput, sign_d2.ToArray());
-
-            return ans_spec;
-        }
+        
         private void button4_Click(object sender, EventArgs e)
         {
             string safeFileName;
