@@ -7,11 +7,7 @@ using System.Windows.Forms.DataVisualization.Charting;
 namespace BasicProcessing
 {
     /// <summary>
-    /// 第２番目にあたるウィンドウ、および処理をここに記述する。
-    /// to show glaphical audio wave from .wav format, 
-    /// i use reading some tags for .wav.
-    /// than next to do is to compare over some signal and generate some.
-    /// than complete i-dft to be able to convert power spectol, is called f-domein, to limited  time-domein
+    /// 第２番目にあたるウィンドウ、および処理記述
     /// </summary>
     public partial class WaveShow : Form
     {
@@ -19,18 +15,31 @@ namespace BasicProcessing
         double[] rDataList;
         WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
-
+        /// <summary>
+        /// 引数なしのコンストラクタは無効
+        /// （フィールドは空）
+        /// </summary>
         public WaveShow()
         {
             InitializeComponent();
         }
-
+        /// <summary>
+        /// 第１番目のウィンドウから基本呼び出される。
+        /// 
+        /// クラス内部ではデータ列（右・左）はdouble型にして持ち、
+        /// 高精度での数的処理をする、
+        /// またWaveへの書き込みには大幅な丸めこみをした値に直す。
+        /// </summary>
+        /// <param name="lDataList1">short型をコレクションとするList</param>
+        /// <param name="rDataList1">short型をコレクションとするList</param>
+        /// <param name="header"></param>
         public WaveShow(List<short> lDataList1, List<short> rDataList1, WaveReAndWr.WavHeader header)
         {
             InitializeComponent();
-            
+            // コレクションの取り出し（配列化）
             short[] ltmp = lDataList1.ToArray();
             short[] rtmp = rDataList1.ToArray();
+
             // フィールドの初期化
             lDataList = new double[ltmp.Length];
             rDataList = new double[rtmp.Length];
@@ -41,11 +50,15 @@ namespace BasicProcessing
                 lDataList[i] = (double)ltmp[i];
                 rDataList[i] = (double)rtmp[i];
             }
+
+            // ヘッダーエラーは保留とする
+            //これによると、不適切なファイルとして再生できないソフトもある。
+            // リニアPCMによる要件を纏める必要がある（保留）
             this.header = header;
             
-            // 以下、左側を処理します
+            // 以下、左側のデータ列を扱う
+            //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
             Plot(lDataList, 1);
-            //double[] tmp = myfunction.DoDFT(lDataList);
             double[] tmp = myfunction.DoFFT(lDataList);
             Plot(tmp, 2);
         }
@@ -209,8 +222,16 @@ namespace BasicProcessing
             }
         }
 
+        /// <summary>
+        /// クラス変数の追加
+        /// playerにより再生状況を記憶している
+        /// </summary>
         private System.Media.SoundPlayer player = null;
-        //WAVEファイルを再生する
+        /// <summary>
+        /// 参照先 waveFile を再生する
+        /// 不適切なファイルとして、現在無効
+        /// </summary>
+        /// <param name="waveFile"></param>
         private void PlaySound(string waveFile)
         {
             //再生されているときは止める
@@ -296,6 +317,7 @@ namespace BasicProcessing
 
             List<short> data = new List<short>();
                 data.AddRange(ans);
+            // フィールド変数から、ヘッダーを参照しています。
             WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, this.header);
             WaveReAndWr.WavWriter(filename, datalist);
         }
@@ -304,9 +326,12 @@ namespace BasicProcessing
         /// </summary>
         public void initsample()
         {
+            // データ列リストの宣言、初期化
             List<short> ldata = new List<short>();
             List<short> rdata = new List<short>();
+            // テスト対象ファイル名
             string longbinarysample = root + @"\bsample";
+            // 空の文字列
             string tfilename = "";
             string[] InFile = new string[]
             {
@@ -365,23 +390,23 @@ namespace BasicProcessing
         /// <param name="x"></param>
         /// <param name="j"></param>
         /// <returns></returns>
-        private double[] complexAnalysc(double[] x, int j)
+        double[] complexAnalysc(double[] x, int j)
         {
             int k = x.Length / j;
             double[] xx = new double[k];
             int count = 0;
             List<double> ans = new List<double>();
             Complex[] cmptmp;
-           // List<short> sign_s1 = new List<short>();
+            // List<short> sign_s1 = new List<short>();
             List<double> sign_d1 = new List<double>();
             double[] ans_spec;
 
             //List<short> sign_s2 = new List<short>();
             List<double> sign_d2 = new List<double>();
 
-            for (int n = 0; n<j; n++)
+            for (int n = 0; n < j; n++)
             {
-                for(int m = 0; m<k; m++)
+                for (int m = 0; m < k; m++)
                 {
                     xx[m] = x[count++];
                 }
@@ -401,14 +426,14 @@ namespace BasicProcessing
                     max[i] = new Complex(0, 0);
 
                 double tmp = 0;
-                for (int i = 0; i<cmptmp.Length; i++)
+                for (int i = 0; i < cmptmp.Length; i++)
                 {
                     tmp = cmptmp[i].magnitude;
                     if (max[4].magnitude < tmp)
                     {
                         max[4] = cmptmp[i];
                     }
-                    else if(max[3].magnitude < tmp)
+                    else if (max[3].magnitude < tmp)
                     {
                         max[3] = cmptmp[i];
                     }
@@ -425,14 +450,14 @@ namespace BasicProcessing
                         max[0] = cmptmp[i];
                     }
                 }
-                for (int i = 0; i<cmptmp.Length; i++)
+                for (int i = 0; i < cmptmp.Length; i++)
                 {
                     tmp = cmptmp[i].magnitude;
                     if (max[4].magnitude == tmp)
                     {
                         cmptmp[i] = max[4];
                     }
-                    else if(max[3].magnitude == tmp)
+                    else if (max[3].magnitude == tmp)
                     {
                         cmptmp[i] = max[3];
                     }
@@ -451,7 +476,7 @@ namespace BasicProcessing
                     else
                     {
                         cmptmp[i] = new Complex(0, 0);
-                    } 
+                    }
                 }
                 sign_d2.AddRange(myfunction.DoIDFT(cmptmp));
                 //sign_s2.AddRange(myfunction.Do_s_IDFT(cmptmp));
