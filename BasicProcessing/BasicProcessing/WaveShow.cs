@@ -327,35 +327,33 @@ namespace BasicProcessing
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            test_idft();
+            //test_idft();
+            int divnum = 100;
+            int[] LFru = new int[lDataList.Length/divnum];
+            int[] RFru = new int[rDataList.Length/divnum];
+            myfunction2.DSP_Class ex = new myfunction2.DSP_Class();
+            // 参照渡しにより、フィールドの時系列データは正弦波で再生されている。
+            // 変数 LFru, RFru は divnum 個のサンプルで共通する周波数[Hz}で再生する
+            LFru = ex.complexSearchF(ref lDataList, divnum);
+            RFru = ex.complexSearchF(ref rDataList, divnum);
+
+            string filename = root + @"\mypractice.wave";
+            Write(filename, lDataList, rDataList);
+
+            
+
             Console.WriteLine("アクションが終了しました。");
-        }
-        /// <summary>
-        /// 秘匿なメソッド
-        /// (i) : 初期化時に描写された時系列デートの右に、dft->idftを通して得た結果を描写する
-        /// (ii) : 得られた時系列データを、4倍の時間に伸ばして、short->double変換する
-        /// </summary>
-        private void test_idft()
-        {
-        //(i)
-            Complex[] tmp_f = myfunction.Manual_DoFFT(lDataList);
-            double[] tmp_t = myfunction.DoIDFT(tmp_f);
-            Plot(tmp_t, 2);
-
-            string fileout = root + @"\madesound.wav";
-
-            Write(fileout, tmp_t);
-            //PlaySound(fileout);
         }
         /// <summary>
         /// 任意の時系列データdataを、
         /// 任意の出力先filenameへと保存する。
+        ///  + 左右の主利を追加
         /// </summary>
         /// <param name="filename"></param>
         /// <param name="data"></param>
-        private void Write(string filename, double[] indata)
+        private void Write(string filename, double[] Lindata, double[] Rindata)
         {
-            short[] ans = new short[indata.Length * 4];
+            short[] ans = new short[Lindata.Length * 4];
             int count = 0;
             short tmp = 0;
 
@@ -363,16 +361,30 @@ namespace BasicProcessing
             {
                 if (i % 4 == 0)
                 {
-                    ans[i] = (short)indata[count++];
+                    ans[i] = (short)Lindata[count++];
                     tmp = ans[i];
                 }
                 ans[i] = tmp;
             }
 
-            List<short> data = new List<short>();
-                data.AddRange(ans);
+            List<short> Ldata = new List<short>();
+                Ldata.AddRange(ans);
+
+            count = 0; // *
+            for (int i = 0; i < ans.Length; i++)
+            {
+                if (i % 4 == 0)
+                {
+                    ans[i] = (short)Rindata[count++];
+                    tmp = ans[i];
+                }
+                ans[i] = tmp;
+            }
+
+            List<short> Rdata = new List<short>();
+            Rdata.AddRange(ans);
             // フィールド変数から、ヘッダーを参照しています。
-            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(data, data, this.header);
+            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(Ldata, Rdata, this.header);
             WaveReAndWr.WavWriter(filename, datalist);
         }
         
@@ -392,8 +404,6 @@ namespace BasicProcessing
 
             safeFileName = root + "\\" + safeFileName;
             WaveReAndWr.DataList data = WaveReAndWr.WavReader(safeFileName, "", false);
-
-
         }
 
         private void label3_Click(object sender, EventArgs e)

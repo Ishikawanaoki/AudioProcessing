@@ -53,109 +53,19 @@ namespace myfunction2
 
             return data;
         }
-        /// <summary>
-        /// 線スペクトルの大きさを比較し、
-        /// 
-        /// </summary>
-        /// <param name="x">時系列データ</param>
-        /// <param name="j">時・分割数</param>
-        /// <returns></returns>
-        public double[] complexAnalysc01(double[] x, int j, int rank)
-        {
-            // x.length <= k * j
-            // サンプル数 <= 一区切りのサンプル数 * 時分割数
-            int k = x.Length / j;
-
-            // 一区切りと等しい長さの配列
-            double[] xx = new double[k];
-
-            int count = 0;
-            //List<double> ans = new List<double>();
-            //double[] ans_spec;
-
-            // List<short> sign_s1 = new List<short>();
-            //List<double> sign_d1 = new List<double>();
-
-
-            //List<short> sign_s2 = new List<short>();
-            //List<double> sign_d2 = new List<double>();
-            Complex[] cmptmp;
-
-            List<Complex> ans = new List<Complex>();
-
-            // 時系列データの先頭から、kサンプルごと、終端のサンプルは消す
-            for (int n = 0; n < j; n++)
-            {
-                for (int m = 0; m < k; m++)
-                {
-                // (i) kサンプル取り出し、配列xxに格納
-                    xx[m] = x[count++];
-                }
-                // 終端到達のため、ループ脱出
-                if (count > x.Length) break;
-
-                // (ii) 取り出した一部の時系列データへ窓関数を作用させる
-                xx = Fourier.Windowing(xx, Fourier.WindowFunc.Hamming);
-
-                // (iii) 短時間での【高速】フーリエ変換
-                // 最終的な ans の要素数 = k_0 + k_1 + ... + k_j = k * j
-                // 複数の周波数分析結果が　連なって格納している。
-                //ans.AddRange(myfunction.DoFFT(xx)); // double 配列を返す
-
-                cmptmp = myfunction.Manual_DoDFT(xx); // Complex 配列を返す
-
-
-                // 短時間での周波数分析を時系列データ(double)へ戻す
-                // 聞こえ方の変化は？
-                //sign_d1.AddRange(myfunction.DoIDFT(cmptmp));
-
-                // 短時間での周波数分析を時系列データ(short)へ戻す
-                // 聞こえ方の変化は？
-                //sign_s1.AddRange(myfunction.Do_s_IDFT(cmptmp));
-
-
-                // 上位第 "rank" 位までの複素数列を宣言、全て0での初期化する。
-                Complex[] max = new Complex[rank];
-                for (int i = 0; i < max.Length; i++) max[i] = new Complex(0, 0);
-
-                // 逐次処理のための、動径を格納するための tmp
-                double tmp = 0;
-                for (int i = 0; i < cmptmp.Length; i++)
-                {
-                    tmp = cmptmp[i].magnitude;
-
-                         if (max[4].magnitude < tmp) max[4] = cmptmp[i];
-                    else if (max[3].magnitude < tmp) max[3] = cmptmp[i];
-                    else if (max[2].magnitude < tmp) max[2] = cmptmp[i];
-                    else if (max[1].magnitude < tmp) max[1] = cmptmp[i];
-                    else if (max[0].magnitude < tmp) max[0] = cmptmp[i];
-                }
-                for (int i = 0; i < cmptmp.Length; i++)
-                {
-                    tmp = cmptmp[i].magnitude;
-                         if (max[4].magnitude == tmp) cmptmp[i] = max[4];                    
-                    else if (max[3].magnitude == tmp) cmptmp[i] = max[3];                    
-                    else if (max[2].magnitude == tmp) cmptmp[i] = max[2];                   
-                    else if (max[1].magnitude == tmp) cmptmp[i] = max[1];                   
-                    else if (max[0].magnitude == tmp) cmptmp[i] = max[0];                   
-                    else                              cmptmp[i] = new Complex(0, 0);
-                }
-                ans.AddRange(cmptmp);
-            }
-
-            return comToTime(ans.ToArray(), j);
-        }
-        public double[] complexAnalysc02(double[] x, int j, int  rank)
+        public int[] complexSearchF(ref double[] x, int j)
         {
             int k = x.Length / j;
             double[] xx = new double[k];
-            
+
             int count = 0;
+            int iMemory = 0;
 
             List<Complex> ans = new List<Complex>();
 
             Complex[] cmptmp;
 
+            List<int> maxFs = new List<int>();
 
             for (int n = 0; n < j; n++)
             {
@@ -169,34 +79,41 @@ namespace myfunction2
 
                 cmptmp = myfunction.Manual_DoDFT(xx);
 
-                Complex[] max = new Complex[5];
-                for (int i = 0; i < rank; i++)
-                    max[i] = new Complex(0, 0);
-                
+                Complex max = new Complex(0, 0);
                 Complex tmp;
+
                 for (int i = 0; i < cmptmp.Length; i++)
                 {
                     tmp = cmptmp[i];
-                         if (max[4].real < tmp.real && max[4].img < tmp.img) max[4] = cmptmp[i];                    
-                    else if (max[3].real < tmp.real && max[3].img < tmp.img) max[3] = cmptmp[i];                    
-                    else if (max[2].real < tmp.real && max[2].img < tmp.img) max[2] = cmptmp[i];                    
-                    else if (max[1].real < tmp.real && max[1].img < tmp.img) max[1] = cmptmp[i];
-                    else if (max[0].real < tmp.real && max[0].img < tmp.img) max[0] = cmptmp[i];
+                    if (max.real < tmp.real && max.img < tmp.img)
+                    {
+                        max = cmptmp[i];
+                        iMemory = i;
+                    }
                 }
+                maxFs.Add(iMemory);
+
                 for (int i = 0; i < cmptmp.Length; i++)
                 {
                     tmp = cmptmp[i];
-                         if (max[4].real == tmp.real && max[4].img == tmp.img) cmptmp[i] = max[4];                    
-                    else if (max[3].real == tmp.real && max[3].img == tmp.img) cmptmp[i] = max[3];                    
-                    else if (max[2].real == tmp.real && max[2].img == tmp.img) cmptmp[i] = max[2];                    
-                    else if (max[1].real == tmp.real && max[1].img == tmp.img) cmptmp[i] = max[1];                    
-                    else if (max[0].real == tmp.real && max[0].img == tmp.img) cmptmp[i] = max[0];                    
-                    else                                                       cmptmp[i] = new Complex(0, 0);                    
+                    if (max.real == tmp.real && max.img ==tmp.img)
+                    {
+                        cmptmp[i] = tmp;
+                    }
+                    else
+                    {
+                        cmptmp[i] = new Complex(0, 0);
+                    }
+                    // ans へ k 個の要素を追加
+                    ans.AddRange(cmptmp);
                 }
-                ans.AddRange(cmptmp);
+
             }
-            return comToTime(ans.ToArray(), j);
-            
+            cmptmp = ans.ToArray();
+            // 参照渡しによる、計算結果の更新
+            // ここでのxでは、短時間(Div[t] = T / j *但し、後尾は切り捨て）
+            x = comToTime(cmptmp, j);
+            return maxFs.ToArray();
         }
         /// <summary>
         /// 「任意の周波数の正弦波を創りだす」
@@ -227,6 +144,20 @@ namespace myfunction2
             double[] ans = sign_data.ToArray();
             return ans;
         }
+        public int[] comToTime01(int length_x, int j, int[] maxFs)
+        {
+            int k = length_x / j;
+            
+            int[] targetF = new int[k];
+            int targetI = 0;
+            foreach (int l in maxFs)
+            {
+                double tmp = l;
+
+                targetF[targetI++]= (int)(44100 / tmp);
+            }
+            return targetF;
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -235,6 +166,7 @@ namespace myfunction2
         /// <returns></returns>
         public double[] comToGenSignal(Complex[] x, int j)
         {
+
             double[] ans = new double[x.Length];
             return ans;
         }

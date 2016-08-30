@@ -103,6 +103,7 @@
     <Content Include="音ファイル\d1.wav" />
     <Content Include="音ファイル\d1s.wav" />
     <Content Include="音ファイル\data\100Hz-2KAD.txt" />
+    <Content Include="音ファイル\data\TextFile1.txt" />
     <Content Include="音ファイル\e1.wav" />
     <Content Include="音ファイル\f1.wav" />
     <Content Include="音ファイル\f1s.wav" />
