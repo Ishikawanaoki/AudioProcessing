@@ -57,6 +57,7 @@
     <Compile Include="myfunction.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserDifinatedFunction.cs" />
     <Compile Include="WaveShow.cs">
       <SubType>Form</SubType>
     </Compile>

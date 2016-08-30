@@ -267,7 +267,7 @@ namespace BasicProcessing
         private void button1_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            initsample();
+            //initsample();
             Console.WriteLine("アクションが終了しました。");
         }
         /// <summary>
