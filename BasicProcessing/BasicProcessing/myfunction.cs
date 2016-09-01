@@ -48,7 +48,7 @@ using System.Threading.Tasks;
 ///         -- 上に加えて、転居による不具合があるかもしれません。
 ///  - 
 /// </summary>
-namespace myfuntion
+namespace function
 {
     /// <summary>
     /// グラフ表示する際の軸データを内部的に演算しています。
@@ -60,7 +60,7 @@ namespace myfuntion
     {
         public double time;        // 時間軸領域の目盛り
         public double frequency;   // 周波数軸領域の目盛り
-        public Axis(int sample_value, int sampling_frequency)
+        public Axis(double sample_value, double sampling_frequency)
         {
             time = 1 / sampling_frequency;
             frequency = sampling_frequency / sample_value;
@@ -383,7 +383,7 @@ namespace myfuntion
     ///  + double[] Windowing(double[] data, WindowFunc windowFunc)
     ///  + Complex[] DFT(Complex[] x)
     /// </summary>
-    class Fourier
+    static class Fourier
     {
 
         /// <summary>
@@ -600,7 +600,7 @@ namespace myfuntion
         /// 13番目 data := filesize   - 14
         /// また、
         /// bytePerSec, blockSizeは相関値である。
-        /// その為ファイルを交信したい場合には次のメンバのみが独立で、変更可能である。（推定、要確認）
+        /// その為ファイルを更新したい場合には次のメンバのみが独立で、変更可能である。（推定、要確認）
         ///     dimBit
         /// 
         /// *filesize = size+8 = dataSize+8
@@ -641,63 +641,7 @@ namespace myfuntion
                 this.WavHeader = WavHeader;
             }
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        public struct LittleDataList
-        {
-            public int Nmax;
-            public WavHeader WavHeader;
-            public LittleDataList(int Nmax, WavHeader WavHeader)
-            {
-                this.Nmax = Nmax;
-                this.WavHeader = WavHeader;
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        public static LittleDataList LittleWavReader(string args)
-        {
-            WavHeader Header = new WavHeader();
-            List<short> lDataList = new List<short>();
-            List<short> rDataList = new List<short>();
-            // モノラル・データの総数
-            int Nmax = 0;
-
-            using (FileStream fs = new FileStream(args, FileMode.Open, FileAccess.Read))
-            using (System.IO.BinaryReader br = new BinaryReader(fs))
-            {
-                try
-                {
-                    Header.riffID = br.ReadBytes(4);
-                    Header.size = br.ReadUInt32();
-                    Header.wavID = br.ReadBytes(4);
-                    Header.fmtID = br.ReadBytes(4);
-                    Header.fmtSize = br.ReadUInt32();
-                    Header.format = br.ReadUInt16();
-                    Header.channels = br.ReadUInt16();
-                    Header.sampleRate = br.ReadUInt32();
-                    Header.bytePerSec = br.ReadUInt32();
-                    Header.blockSize = br.ReadUInt16();
-                    Header.dimBit = br.ReadUInt16();
-                    Header.dataID = br.ReadBytes(4);
-                    Header.dataSize = br.ReadUInt32();
-
-                    Nmax = Convert.ToInt32(Header.dataSize / Header.blockSize);
-                }
-                finally
-                {
-                    if (br != null) br.Close();
-                    if (fs != null) fs.Close();
-                }
-            }
-
-            LittleDataList data = new LittleDataList(Nmax, Header);
-            return data;
-        }
+        
         /// <summary>
         /// このメソッドでは外部からでも呼び出せるように、静的とする
         /// 処理の中断を明確にするために、状態を保存、のちにラベル表示できる。（未）

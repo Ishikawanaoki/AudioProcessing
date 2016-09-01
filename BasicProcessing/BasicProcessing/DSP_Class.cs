@@ -1,4 +1,4 @@
-﻿using myfuntion;
+﻿using function;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,34 +53,72 @@ namespace myfunction2
 
             return data;
         }
-        public int[] complexSearchF(ref double[] x, int j)
+        class ComplexStaff
         {
-            int k = x.Length / j;
-            double[] xx = new double[k];
+            private int dividedNum;
+            private double[] rawSign;
+            private int shortLength;
 
-            int count = 0;
-            int iMemory = 0;
+            private double[] shortSign;
+            //private int indexshortSign;
 
-            List<Complex> ans = new List<Complex>();
-
-            Complex[] cmptmp;
-
-            List<int> maxFs = new List<int>();
-
-            for (int n = 0; n < j; n++)
+            public int DividedNum
             {
-                for (int m = 0; m < k; m++)
+                set { this.dividedNum = value; }
+                // get {}
+            }
+            public double[] RawSign
+            {
+                set
                 {
-                    xx[m] = x[count++];
+                    rawSign = value;
+
+                    // any process
+                    if( dividedNum > 0)
+                    {
+                        shortLength = (int)( rawSign.Length / dividedNum );
+                        // memory assign
+                        shortSign = new double[shortLength];
+                    }
                 }
-                if (count > x.Length) break;
+            }
+            public double[] MaxIndex(int groupIndex, ref int ansIndex, ref double[] speAna)
+            {
+                if (!(dividedNum > 0))
+                {
+                    return null;
+                }
+                else {
+                    FitShortSign(groupIndex, rawSign);
 
-                xx = Fourier.Windowing(xx, Fourier.WindowFunc.Hamming);
+                    shortSign = Fourier.Windowing( shortSign, Fourier.WindowFunc.Hamming );
 
-                cmptmp = myfunction.Manual_DoDFT(xx);
+                    Complex[] cmptmp = myfunction.Manual_DoDFT( shortSign );
+
+
+                    speAna = SeeMagnitude(cmptmp);
+                    ansIndex = ComplexProcessing( ref cmptmp ); // cmptmp is changed
+                    return myfunction.DoIDFT(cmptmp);
+                }
+                
+            }
+            private void FitShortSign (int groupIndex, double[] sign)
+            {
+                int tmp;
+                // if (shortLength != (sign.Length / dividedNum)) return;
+                for (int i = 0; i < shortLength; i++)
+                {
+                    tmp = (shortLength * groupIndex) + i;
+                    if (tmp > sign.Length) break; // avoid null access
+                    shortSign[i] = sign[tmp];
+                }
+            }
+            private int ComplexProcessing( ref Complex[] cmptmp )
+            {
+                Complex tmp;
 
                 Complex max = new Complex(0, 0);
-                Complex tmp;
+                int indextmp = 0;
 
                 for (int i = 0; i < cmptmp.Length; i++)
                 {
@@ -88,32 +126,138 @@ namespace myfunction2
                     if (max.real < tmp.real && max.img < tmp.img)
                     {
                         max = cmptmp[i];
-                        iMemory = i;
+                        indextmp = i;
                     }
                 }
-                maxFs.Add(iMemory);
 
                 for (int i = 0; i < cmptmp.Length; i++)
                 {
                     tmp = cmptmp[i];
-                    if (max.real == tmp.real && max.img ==tmp.img)
+                    if (max.real == tmp.real && max.img == tmp.img)
                     {
-                        cmptmp[i] = tmp;
+                        // OK
+                        //cmptmp[i] = tmp;
                     }
                     else
                     {
+                        //NG
                         cmptmp[i] = new Complex(0, 0);
                     }
-                    // ans へ k 個の要素を追加
-                    ans.AddRange(cmptmp);
+                }
+                return indextmp;
+            }
+            private double[] SeeMagnitude(Complex[] cmp)
+            {
+                double[] speAna = new double[cmp.Length];
+                for (int i = 0; i < cmp.Length; i++)
+                    speAna[i] = cmp[i].magnitude;
+                return speAna;
+            }
+        }
+        /// <summary>
+        /// このクラスで唯一呼び出せるメソッドで次の操作を行うものとする
+        ///  - 短い時間に分割された時系列で離散フーリエし、任意の操作をして時系列へ戻す
+        ///  -- この操作での結果を複数のパラメータで扱う
+        ///  ---    int[] : 返却値 : 各単位時間での採用した周波数を示す添え字、double[]で周波数値を返すようにする
+        ///  ---    double[] : 参照渡し変数 : 操作した後の時系列
+        ///  ---    double[] : 参照渡し変数 : 操作した後のスペクトルグラフ
+        ///  - 
+        /// </summary>
+        /// <param name="rawSign"></param>
+        /// <param name="dividedNum"></param>
+        /// <returns></returns>
+        public int[] complexSearchv02(ref double[] rawSign, int dividedNum, ref double[] speAna)
+        {
+
+            List<double> newSign = new List<double>();
+            List<int> maxIndexByGroupe = new List<int>();
+
+            List<double> cList = new List<double>(); 
+
+            ComplexStaff cs = new ComplexStaff();
+            cs.DividedNum = dividedNum; 
+            cs.RawSign = rawSign;
+
+            for(int i=0; i< dividedNum; i++)
+            {
+                int tmp = 0;
+                double[] ctmp = new double[ rawSign.Length / dividedNum ];
+                newSign.AddRange(
+                    cs.MaxIndex( i, ref tmp, ref ctmp)
+                    );
+                maxIndexByGroupe.Add(tmp);
+                cList.AddRange(ctmp);
+            }
+            
+            // end process
+
+            rawSign = newSign.ToArray();
+            return maxIndexByGroupe.ToArray();
+        }
+        public int[] complexSearchv01(ref double[] RawSign, int dividedNum)
+        {
+            // 変数
+            int indexRawSign = 0;
+            // [定数]
+            int ShortLength = RawSign.Length / dividedNum;
+            // 変数
+            double[] ShortSign = new double[ShortLength];
+            // 変数
+            int indexShortSign = 0;
+
+            List<Complex> ans = new List<Complex>();
+
+            Complex[] cmptmp;
+
+            List<int> maxIndex = new List<int>();
+
+            for (int n = 0; n < dividedNum; n++)
+            {
+                for (int m = 0; m < ShortLength; m++) ShortSign[m] = RawSign[indexRawSign++];
+                if (indexRawSign > RawSign.Length) break;
+
+                ShortSign = Fourier.Windowing(ShortSign, Fourier.WindowFunc.Hamming);
+                cmptmp = myfunction.Manual_DoDFT(ShortSign);
+
+
+                Complex max = new Complex(0, 0);    // 最も大きなスペクトル
+                Complex tmp;                        // 各短時間毎に、先頭から、周波数解析結果を取得
+
+                // 第一次周波数探索実行
+                // 　最大のスペクトル長と、その添え字 i を取得
+                for (int i = 0; i < cmptmp.Length; i++)
+                {
+                                tmp = cmptmp[i];
+                                if (max.real < tmp.real && max.img < tmp.img)
+                                {
+                                    max = cmptmp[i];
+                                    indexShortSign = i;
+                                }
+                }
+                maxIndex.Add(indexShortSign);
+                // 第一次周波数探索実行
+                // 　最大のスペクトル長以外は0へ変換する
+                for (int i = 0; i < cmptmp.Length; i++)
+                {
+                                tmp = cmptmp[i];
+                                if (max.real == tmp.real && max.img ==tmp.img)
+                                { 
+                                    cmptmp[i] = tmp;
+                                }
+                                else
+                                {
+                                    cmptmp[i] = new Complex(0, 0);
+                                }
+                                // ans へ k 個の要素を追加
+                                ans.AddRange(cmptmp);
                 }
 
             }
             cmptmp = ans.ToArray();
             // 参照渡しによる、計算結果の更新
             // ここでのxでは、短時間(Div[t] = T / j *但し、後尾は切り捨て）
-            x = comToTime(cmptmp, j);
-            return maxFs.ToArray();
+            RawSign = comToTime(cmptmp, dividedNum);
+            return maxIndex.ToArray();
         }
         /// <summary>
         /// 「任意の周波数の正弦波を創りだす」

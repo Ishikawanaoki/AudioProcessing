@@ -1,4 +1,4 @@
-﻿using myfuntion;
+﻿using function;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -82,7 +82,7 @@ namespace BasicProcessing
 
             string[] xValues = new string[y.Length/2];
 
-            myfuntion.Axis plot_axis = new myfuntion.Axis(y.Length, 44100);
+            function.Axis plot_axis = new function.Axis(y.Length, 44100);
             plot_axis.strighAxie(ref xValues);
 
             switch (no) {
@@ -264,12 +264,6 @@ namespace BasicProcessing
         private void WaveShow_Load_1(object sender, EventArgs e)
         {
         }
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Console.WriteLine("ボタンが押されました。");
-            //initsample();
-            Console.WriteLine("アクションが終了しました。");
-        }
         /// <summary>
         /// テストを行う対象を自動的に作るプログラム
         /// </summary>
@@ -328,19 +322,27 @@ namespace BasicProcessing
         {
             Console.WriteLine("ボタンが押されました。");
             //test_idft();
-            int divnum = 100;
+            int divnum = 200;
             int[] LFru = new int[lDataList.Length/divnum];
             int[] RFru = new int[rDataList.Length/divnum];
             myfunction2.DSP_Class ex = new myfunction2.DSP_Class();
+
+            double[] speAna = new double[lDataList.Length / divnum];
+
             // 参照渡しにより、フィールドの時系列データは正弦波で再生されている。
             // 変数 LFru, RFru は divnum 個のサンプルで共通する周波数[Hz}で再生する
-            LFru = ex.complexSearchF(ref lDataList, divnum);
-            RFru = ex.complexSearchF(ref rDataList, divnum);
+            LFru = ex.complexSearchv02(ref lDataList, divnum, ref speAna);
+            Console.WriteLine("LFる");
+
+            Plot(lDataList, 1);
+            Plot(speAna, 2);
+
+            RFru = ex.complexSearchv02(ref rDataList, divnum, ref speAna);
+            Console.WriteLine("RFる");
 
             string filename = root + @"\mypractice.wave";
             Write(filename, lDataList, rDataList);
 
-            
 
             Console.WriteLine("アクションが終了しました。");
         }
@@ -397,16 +399,21 @@ namespace BasicProcessing
 
             safeFileName = ofp.SafeFileName;
 
-            if (dr == DialogResult.OK)
-            {
-                label3.Text = safeFileName;
-            }
-
             safeFileName = root + "\\" + safeFileName;
             WaveReAndWr.DataList data = WaveReAndWr.WavReader(safeFileName, "", false);
         }
 
         private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
         {
 
         }

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-using static myfuntion.WaveReAndWr;
+using static function.WaveReAndWr;
 
 namespace BasicProcessing
 {
