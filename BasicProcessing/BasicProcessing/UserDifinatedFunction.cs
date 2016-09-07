@@ -47,6 +47,14 @@ namespace function
         }
         public class MathematicalWave
         {
+            public double TriangleWaveSample(double A, double f0, double fs, double length, int sampleSize, int targetSample)
+            {
+                return Enumerable.Range(1, sampleSize-1)
+                                 .Select(i =>
+                                     Math.Pow((-1), i) * (A / Math.Pow(2*i-1, 2)) * Math.Sin((2*i-1) * 2 * Math.PI 
+                                         * f0 * (targetSample / sampleSize) / fs)
+                                 ).Sum();
+            }
             // 三角波
             // 振幅、基本周波数、サンプリング周波数、長さの4つの引数をとり、三角波を返却します。
             /// <summary>
@@ -68,10 +76,11 @@ namespace function
 
                     for (int k = 0; k < 10; k++) // サンプルごとに10個のサイン波を重ね合わせ
                     {
+                        var m = 2 * k + 1;
                         s = s 
                             + Math.Pow((-1), k)
-                            * (A / Math.Pow((2 * k + 1), 2)) 
-                            * Math.Sin((2 * k + 1) * 2 * Math.PI * f0 * n / fs);
+                            * (A / Math.Pow(m, 2)) 
+                            * Math.Sin(m * 2 * Math.PI * f0 * n / fs);
                         // 振幅が大きい時はクリッピング
                         if (s > 1.0)
                         {
@@ -102,7 +111,7 @@ namespace function
             /// <param name="fs"></param>
             /// <param name="length"></param>
             /// <returns></returns>
-            double[] createSawtoothWave(double A, double f0, double fs, double length)
+            public double[] createSawtoothWave(double A, double f0, double fs, double length)
             {
                 double[] data = new double[0];
                 double[] result = new double[0];

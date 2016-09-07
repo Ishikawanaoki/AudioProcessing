@@ -45,7 +45,7 @@ namespace BasicProcessing
             rDataList = new double[rtmp.Length];
 
             // 浮動小数点への変換
-            for (int i=0; i<ltmp.Length; i++)
+            for (int i = 0; i < ltmp.Length; i++)
             {
                 lDataList[i] = (double)ltmp[i];
                 rDataList[i] = (double)rtmp[i];
@@ -55,7 +55,7 @@ namespace BasicProcessing
             //これによると、不適切なファイルとして再生できないソフトもある。
             // リニアPCMによる要件を纏める必要がある（保留）
             this.header = header;
-            
+
             // 以下、左側のデータ列を扱う
             //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
             Plot(lDataList, 1);
@@ -80,12 +80,13 @@ namespace BasicProcessing
             seriesLine.ChartType = SeriesChartType.Line; // 折れ線グラフ
             seriesLine.LegendText = "Legend:Line";       // 凡例
 
-            string[] xValues = new string[y.Length/2];
+            string[] xValues = new string[y.Length / 2];
 
             function.Axis plot_axis = new function.Axis(y.Length, 44100);
             plot_axis.strighAxie(ref xValues);
 
-            switch (no) {
+            switch (no)
+            {
                 case 1:
                     chart1.Titles.Clear();
                     chart1.Series.Clear();
@@ -95,7 +96,7 @@ namespace BasicProcessing
                     chart1.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
                     chart1.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
                     chart1.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
-                    
+
                     chart1.Series["Area1"].ChartType = SeriesChartType.Line;
 
                     break;
@@ -133,12 +134,12 @@ namespace BasicProcessing
                         chart2.Series["Area2"].Points.Add(dp);   //グラフにデータ追加
                         break;
                 }
-             }
+            }
             label1.Text = "DTime : " + plot_axis.time.ToString();
             label2.Text = "DFreq : " + plot_axis.frequency.ToString();
 
         }
-        
+
         /// <summary>
         /// 現在のchar1を保存。
         /// </summary>
@@ -206,7 +207,7 @@ namespace BasicProcessing
                                 }
                                 break;
                         }
-                        
+
                         saveFileDialog.Dispose();
 
                     }
@@ -240,7 +241,7 @@ namespace BasicProcessing
 
             //読み込む
             player = new System.Media.SoundPlayer(waveFile);
-            
+
             //非同期再生する
             //player.Play();
 
@@ -323,8 +324,8 @@ namespace BasicProcessing
             Console.WriteLine("ボタンが押されました。");
             //test_idft();
             int divnum = 200;
-            int[] LFru = new int[lDataList.Length/divnum];
-            int[] RFru = new int[rDataList.Length/divnum];
+            int[] LFru = new int[lDataList.Length / divnum];
+            int[] RFru = new int[rDataList.Length / divnum];
             myfunction2.DSP_Class ex = new myfunction2.DSP_Class();
 
             double[] speAna = new double[lDataList.Length / divnum];
@@ -370,7 +371,7 @@ namespace BasicProcessing
             }
 
             List<short> Ldata = new List<short>();
-                Ldata.AddRange(ans);
+            Ldata.AddRange(ans);
 
             count = 0; // *
             for (int i = 0; i < ans.Length; i++)
@@ -389,7 +390,7 @@ namespace BasicProcessing
             WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(Ldata, Rdata, this.header);
             WaveReAndWr.WavWriter(filename, datalist);
         }
-        
+
         private void button4_Click(object sender, EventArgs e)
         {
             string safeFileName;
@@ -416,6 +417,103 @@ namespace BasicProcessing
         private void label2_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            testMathematicalWave();
+        }
+        private void testMathematicalWave()
+        {
+            function.otherUser.MathematicalWave func = new function.otherUser.MathematicalWave();
+            double[] tw = func.createTriangleWave(1, 1, 1, 200);
+            double[] sw = func.createSawtoothWave(1, 1, 1, 200);
+            double[] sample = getSampleWave(200).ToArray();
+            Plot2(tw,sample,1);
+            Plot2(sw, sample, 2);
+            Console.WriteLine("tw.Length  : {0}", tw.Length);
+            Console.WriteLine("sw.Length  : {0}", sw.Length);
+            Console.WriteLine("sample.Length  : {0}", sample.Length);
+
+        }
+        private List<double> getSampleWave(int size)
+        {
+            List<double> list = new List<double>();
+            for (int i = 0; i < size; i++)
+                list.Add(
+                    Math.Sin(2 * Math.PI * i / size)
+                    );
+            return list;
+        }
+        private void Plot2(double[] y, double[] y2, int no)
+        {
+            string[] xValues = new string[y.Length];
+
+            function.Axis plot_axis = new function.Axis(y.Length, 100);
+            plot_axis.strighAxie(ref xValues);
+
+            switch (no)
+            {
+                case 1:
+                    chart1.Titles.Clear();
+                    chart1.Series.Clear();
+                    chart1.ChartAreas.Clear();
+
+                    chart1.Series.Add("Area1");
+                    chart1.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
+                    chart1.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
+                    chart1.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
+
+                    chart1.Series["Area1"].ChartType = SeriesChartType.Line;
+
+                    break;
+                case 2:
+                    chart2.Titles.Clear();
+                    chart2.Series.Clear();
+                    chart2.ChartAreas.Clear();
+
+                    chart2.Series.Add("Area2");
+                    chart2.ChartAreas.Add(new ChartArea("Area2"));            // ChartArea作成
+                    chart2.ChartAreas["Area2"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
+                    chart2.ChartAreas["Area2"].AxisY.Title = "[/]";  // Y軸タイトル設定
+
+                    chart2.Series["Area2"].ChartType = SeriesChartType.Line;
+                    break;
+            }
+
+            for (int i = 0; i < xValues.Length; i++)
+            {
+                switch (no)
+                {
+                    case 1:
+                        DataPoint dp = new DataPoint();
+                        DataPoint dp1 = new DataPoint();
+                        dp.SetValueXY(xValues[i], y[i]);
+                        dp.IsValueShownAsLabel = false;
+                        chart1.Series["Area1"].Points.Add(dp);
+
+                        dp1.SetValueXY(xValues[i], y2[i]);
+                        dp1.IsValueShownAsLabel = false;
+                        chart1.Series["Area1"].Points.Add(dp1);
+                        break;
+                    case 2:
+                        DataPoint dp2 = new DataPoint();
+                        DataPoint dp3 = new DataPoint();
+                        dp2.SetValueXY(xValues[i], y[i]);
+                        dp2.IsValueShownAsLabel = false;
+                        chart2.Series["Area2"].Points.Add(dp2);
+
+                        dp3.SetValueXY(xValues[i], y2[i]);
+                        dp3.IsValueShownAsLabel = false;
+                        chart2.Series["Area2"].Points.Add(dp3);
+                        break;
+                }
+                
+
+            }
+            
+            label1.Text = "DTime : " + plot_axis.time.ToString();
+            label2.Text = "DFreq : " + plot_axis.frequency.ToString();
         }
     }
 }
