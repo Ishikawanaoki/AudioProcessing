@@ -47,7 +47,7 @@ namespace function
         }
         public class MathematicalWave
         {
-            public double TriangleWaveSample(double A, double f0, double fs, double length, int sampleSize, int targetSample)
+            private double TriangleWaveSample(double A, double f0, double fs, double length, int sampleSize, int targetSample)
             {
                 return Enumerable.Range(1, sampleSize-1)
                                  .Select(i =>
@@ -67,8 +67,7 @@ namespace function
             /// <returns></returns>
             public double[] createTriangleWave(double A, double f0, double fs, double length)
             {
-                double[] data = new double[0];
-                double[] result = new double[0];
+                List<double> list = new List<double>();
                 // [-1.0, 1.0]の小数値が入った波を作成
                 for (int n = 0; n < (length * fs); n++) //nはサンプルインデックス
                 {
@@ -82,24 +81,20 @@ namespace function
                             * (A / Math.Pow(m, 2)) 
                             * Math.Sin(m * 2 * Math.PI * f0 * n / fs);
                         // 振幅が大きい時はクリッピング
-                        if (s > 1.0)
+                        if (s > A)
                         {
                             s = 1.0;
 
                         }
-
-                        if (s < -1.0)
+                        if (s < (-1)*A)
                         {
                             s = -1.0;
 
                         }
-
-                        List<double> list = new List<double>(data);
-                        list.Add(s);
-                        result = list.ToArray();
                     }
+                    list.Add(s);
                 }
-                return result;
+                return list.ToArray();
             }
             //ノコギリ波
             //振幅、基本周波数、サンプリング周波数、長さの4つの引数をとり、ノコギリ波を返却します。
@@ -113,33 +108,28 @@ namespace function
             /// <returns></returns>
             public double[] createSawtoothWave(double A, double f0, double fs, double length)
             {
-                double[] data = new double[0];
-                double[] result = new double[0];
+                List<double> list = new List<double>();
                 //[-1.0, 1.0]の小数値が入った波を作成
                 for (int n = 0; n < (length * fs); n++) //nはサンプルインデックス
                 {
                     double s = 0.0;
 
-                    for (int k = 0; k < 10; k++) // サンプルごとに10個のサイン波を重ね合わせ
+                    for (int k = 1; k < 9; k++) // サンプルごとに10個のサイン波を重ね合わせ
                     {
                         s = s + (A / k) * Math.Sin(2 * Math.PI * k * f0 * n / fs);
                         // 振幅が大きい時はクリッピング
-                        if (s > 1.0)
+                        if (s > A)
                         {
                             s = 1.0;
                         }
-
-                        if (s < -1.0)
+                        if (s < (-1)*A)
                         {
                             s = -1.0;
                         }
-
-                        List<double> list = new List<double>(data);
-                        list.Add(s);
-                        result = list.ToArray();
                     }
+                    list.Add(s);
                 }
-                return result;
+                return list.ToArray();
             }
         }
     }

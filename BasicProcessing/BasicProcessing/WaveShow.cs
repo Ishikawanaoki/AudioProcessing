@@ -428,20 +428,31 @@ namespace BasicProcessing
             function.otherUser.MathematicalWave func = new function.otherUser.MathematicalWave();
             double[] tw = func.createTriangleWave(1, 1, 1, 200);
             double[] sw = func.createSawtoothWave(1, 1, 1, 200);
-            double[] sample = getSampleWave(200).ToArray();
-            Plot2(tw,sample,1);
-            Plot2(sw, sample, 2);
+            double[] sample = getSampleWave(1, 1, 1, 200).ToArray();
+            Plot2(tw,getSampleWave2(),1);
+            Plot2(sw,getSampleWave2(), 2);
             Console.WriteLine("tw.Length  : {0}", tw.Length);
             Console.WriteLine("sw.Length  : {0}", sw.Length);
             Console.WriteLine("sample.Length  : {0}", sample.Length);
+            for(int i=0; i<tw.Length; i++)
+                Console.WriteLine("{0}  : {1},{2},{3}", i, tw[i], sw[i], sample[i]);
 
         }
-        private List<double> getSampleWave(int size)
+        private double[] getSampleWave2()
+        {
+            double[] ans = new double[200];
+            for (int i = 0; i < ans.Length; i++)
+                ans[i] = 0;
+            return ans;
+        }
+        private List<double> getSampleWave(double A,double f0, double fs, double length)
         {
             List<double> list = new List<double>();
-            for (int i = 0; i < size; i++)
+            for (int i = 0; i < length; i++)
+                // for (int n = 0; n < (length * fs); n++)
                 list.Add(
-                    Math.Sin(2 * Math.PI * i / size)
+                    Math.Sin(2 * Math.PI * f0 * i / length)
+                    // Math.Sin(m * 2 * Math.PI * f0 * n / fs);
                     );
             return list;
         }
@@ -464,7 +475,13 @@ namespace BasicProcessing
                     chart1.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
                     chart1.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
 
+                    chart1.Series.Add("SampleWave");
+                    chart1.ChartAreas.Add(new ChartArea("SampleWave"));            // ChartArea作成
+                    chart1.ChartAreas["SampleWave"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
+                    chart1.ChartAreas["SampleWave"].AxisY.Title = "[/]";  // Y軸タイトル設定
+
                     chart1.Series["Area1"].ChartType = SeriesChartType.Line;
+                    chart1.Series["SampleWave"].ChartType = SeriesChartType.Line;
 
                     break;
                 case 2:
@@ -472,12 +489,18 @@ namespace BasicProcessing
                     chart2.Series.Clear();
                     chart2.ChartAreas.Clear();
 
-                    chart2.Series.Add("Area2");
-                    chart2.ChartAreas.Add(new ChartArea("Area2"));            // ChartArea作成
-                    chart2.ChartAreas["Area2"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
-                    chart2.ChartAreas["Area2"].AxisY.Title = "[/]";  // Y軸タイトル設定
+                    chart2.Series.Add("Area1");
+                    chart2.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
+                    chart2.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
+                    chart2.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
 
-                    chart2.Series["Area2"].ChartType = SeriesChartType.Line;
+                    chart2.Series.Add("SampleWave");
+                    chart2.ChartAreas.Add(new ChartArea("SampleWave"));            // ChartArea作成
+                    chart2.ChartAreas["SampleWave"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
+                    chart2.ChartAreas["SampleWave"].AxisY.Title = "[/]";  // Y軸タイトル設定
+
+                    chart2.Series["Area1"].ChartType = SeriesChartType.Line;
+                    chart2.Series["SampleWave"].ChartType = SeriesChartType.Line;
                     break;
             }
 
@@ -494,18 +517,18 @@ namespace BasicProcessing
 
                         dp1.SetValueXY(xValues[i], y2[i]);
                         dp1.IsValueShownAsLabel = false;
-                        chart1.Series["Area1"].Points.Add(dp1);
+                        chart1.Series["SampleWave"].Points.Add(dp1);
                         break;
                     case 2:
                         DataPoint dp2 = new DataPoint();
                         DataPoint dp3 = new DataPoint();
                         dp2.SetValueXY(xValues[i], y[i]);
                         dp2.IsValueShownAsLabel = false;
-                        chart2.Series["Area2"].Points.Add(dp2);
+                        chart2.Series["Area1"].Points.Add(dp2);
 
                         dp3.SetValueXY(xValues[i], y2[i]);
                         dp3.IsValueShownAsLabel = false;
-                        chart2.Series["Area2"].Points.Add(dp3);
+                        chart2.Series["SampleWave"].Points.Add(dp3);
                         break;
                 }
                 
