@@ -98,7 +98,7 @@ namespace myfunction2
 
                     speAna = SeeMagnitude(cmptmp);
                     ansIndex = ComplexProcessing( ref cmptmp ); // cmptmp is changed
-                    return myfunction.DoIDFT(cmptmp);
+                    return myfunction.DoIDFT(cmptmp).ToArray();
                 }
                 
             }

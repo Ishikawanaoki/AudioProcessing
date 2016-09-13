@@ -19,9 +19,7 @@ namespace function
         }
         public static class Music
         {
-            public static double[] effecientMusicalScale(double[] sign)
-            {
-                var list = new[]
+            public static double[] list = 
                 {
                 16.35, 17.32, 18.35, 19.45, 20.6, 21.83, 23.12, 24.5, 25.96, 27.5, 29.14, 30.87, 32.7,
                 34.65, 36.71, 38.89, 41.2, 43.65, 46.25, 49, 51.91, 55, 58.27, 61.74, 65.41, 69.3, 73.42, 77.78, 82.41,
@@ -33,7 +31,9 @@ namespace function
                 4186.01, 4434.92, 4698.64, 4978.03, 5274.04, 5587.65, 5919.91, 6271.93, 6644.88, 7040, 7458.62,
                 7902.13, 8372.02, 8869.84, 9397.27, 9956.06, 10548.08, 11175.3, 11839.82, 12543.85, 13289.75, 14080,
                 14917, 15804, 16274, 16744
-            };
+                };
+            public static double[] effecientMusicalScale(double[] sign)
+            {
                 List<double> ans = new List<double>();
                 double value;
                 foreach (double item in sign)
@@ -47,6 +47,19 @@ namespace function
         }
         public class MathematicalWave
         {
+            IEnumerable<Tuple<double, double>> SquareWave(double freq, double lowAmp, double highAmp)
+            {
+                for (var x = 0.0; true; x += 1.0)
+                {
+                    var y = ((int)(x / freq) % 2) == 0 ? lowAmp : highAmp;
+                    yield return Tuple.Create(x, y);
+                }
+            }
+            public void exMain()
+            {
+                foreach (var t in SquareWave(10, -5, 5).Take(30))
+                    Console.WriteLine("X: {0:0.0}/Y: {1:0.0}", t.Item1, t.Item2);
+            }
             private double TriangleWaveSample(double A, double f0, double fs, double length, int sampleSize, int targetSample)
             {
                 return Enumerable.Range(1, sampleSize-1)
@@ -73,7 +86,7 @@ namespace function
                 {
                     double s = 0.0;
 
-                    for (int k = 0; k < 10; k++) // サンプルごとに10個のサイン波を重ね合わせ
+                    for (int k = 0; k < 20; k++) // サンプルごとに10個のサイン波を重ね合わせ
                     {
                         var m = 2 * k + 1;
                         s = s 
@@ -114,7 +127,7 @@ namespace function
                 {
                     double s = 0.0;
 
-                    for (int k = 1; k < 9; k++) // サンプルごとに10個のサイン波を重ね合わせ
+                    for (int k = 1; k < 19; k++) // サンプルごとに10個のサイン波を重ね合わせ
                     {
                         s = s + (A / k) * Math.Sin(2 * Math.PI * k * f0 * n / fs);
                         // 振幅が大きい時はクリッピング

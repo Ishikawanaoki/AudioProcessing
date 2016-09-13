@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 /// <summary>
 /// 前のプロジェクトからの名残を転々と映していたりしたため、
@@ -108,170 +107,99 @@ namespace function
         /// </summary>
         /// <param name="y"></param>
         /// <returns></returns>
-        public static double[] seikika(double[] y)
+        public static IEnumerable<double> seikika(double[] y)
         {
-            double min = 0;
-            double max = 0;
-            foreach (double x in y)
-            {
-                if (min > x) min = x;
-                if (max < x) max = x;
-            }
-            max = max - min;
-            int i = 0;
-            foreach (double x2 in y)
-            {
-                //x2 = x2 / max * 100;]
-                y[i++] = x2 / max * 100;
-            }
-            return y;
+            double seikika = y.Max() - y.Min();
+            foreach (double item in y)
+               yield return (item / seikika * 100);
         }
-        /// <summary>
-        /// DFTを実行し、そしてグラフ描写をするテストクラスです
-        /// <para name = "sign">時間信号の複素数列</para>
-        /// <para name = "do_dft">結果である複素数列</para>
-        /// </summary>
         public static double[] DoDFT(double[] y) //本体
         {
-            //Console.WriteLine("離散フーリエ変換を開始します");
-            Complex[] sign = new Complex[y.Length];
-            Complex[] do_dft = new Complex[y.Length];
-
-            double[] y_out = new double[y.Length];
-
-            for (int i = 0; i < y.Length; i++)
-                sign[i] = new Complex(y[i], 0);
-
-            do_dft = Fourier.DFT(sign);
-
-            for (int ii = 0; ii < y.Length; ii++)
-            {
-                y_out[ii] = do_dft[ii].magnitude;
-                y_out[ii] = Math.Log10(y_out[ii]) * 10;
-            }
-            //Console.WriteLine("離散フーリエ変換を終了します");
-            return y_out;
+            ActiveComplex acmp = new ActiveComplex(y);
+            acmp.FTransform(Fourier.ComplexFunc.DFT);
+            return acmp.GetMagnitude().ToArray();
         }
         public static Complex[] Manual_DoDFT(double[] y) //本体
         {
-            //Console.WriteLine("離散フーリエ変換を開始します");
-            Complex[] sign = new Complex[y.Length];
-            Complex[] do_dft = new Complex[y.Length];
-
-            double[] y_out = new double[y.Length];
-
-            for (int i = 0; i < y.Length; i++)
-                sign[i] = new Complex(y[i], 0);
-
-            do_dft = Fourier.DFT(sign);
-
-            //Console.WriteLine("離散フーリエ変換を終了します");
-            return do_dft;
+            ActiveComplex acmp = new ActiveComplex(y);
+            return acmp.FTransform(Fourier.ComplexFunc.DFT);
         }
-        /// <summary>
-        /// 複素数配列を引数として、逆フーリエ変換し、また時系列データをdouble型で返す。
-        /// </summary>
-        /// <param name="sign"></param>
-        /// <returns></returns>
-        public static double[] DoIDFT(Complex[] sign) //本体
+        public static IEnumerable<double> DoIDFT(Complex[] sign) //本体
         {
-            //Console.WriteLine("逆離散フーリエ変換を開始します");
-            Complex[] do_idft = new Complex[sign.Length];
-
-            double[] y_out = new double[sign.Length];
-            
-            do_idft = Fourier.IDFT(sign);
-
-            for (int i = 0; i < sign.Length; i++)
-            {
-                //y_out[i] = do_idft[i].magnitude;
-                y_out[i] = do_idft[i].real;
-            }
-            //Console.WriteLine("離散フーリエ変換を終了します");
-            return y_out;
+            ActiveComplex acmp = new ActiveComplex(sign);
+            Complex[] items = acmp.FTransform(Fourier.ComplexFunc.IDFT);
+            foreach (Complex item in items)
+                yield return item.real;
         }
-        public static short[] Do_s_IDFT(Complex[] sign) //本体
+        public IEnumerable<short> Do_s_IDFT(Complex[] sign) //本体
         {
-            //Console.WriteLine("逆離散フーリエ変換を開始します");
-            Complex[] do_idft = new Complex[sign.Length];
-
-            short[] y_out = new short[sign.Length];
-
-            do_idft = Fourier.IDFT(sign);
-
-            for (int i = 0; i < sign.Length; i++)
-            {
-                //y_out[i] = do_idft[i].magnitude;
-                y_out[i] = (short)do_idft[i].real;
-            }
-            //Console.WriteLine("離散フーリエ変換を終了します");
-            return y_out;
+            ActiveComplex acmp = new ActiveComplex(sign);
+            Complex[] items = acmp.FTransform(Fourier.ComplexFunc.IDFT);
+            foreach (Complex item in items)
+                yield return (short)item.real;
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="y"></param>
-        /// <returns></returns>
         public static double[] DoFFT(double[] y) //本体
         {
-            // 要素数をチェックします。
-            int Lines = EnableLines(y.Length);
-            //Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
-
-            //Console.WriteLine("高速フーリエ変換を開始します");
-            Complex[] sign = new Complex[Lines];
-            Complex[] do_dft = new Complex[Lines];
-
-            double[] y_out = new double[Lines];
-
-            for (int i = 0; i < Lines; i++)
-                sign[i] = new Complex(y[i], 0);
-
-
-            do_dft = Fourier.FFT(sign);
-
-            for (int ii = 0; ii < Lines; ii++)
-            {
-                y_out[ii] = do_dft[ii].magnitude;
-                y_out[ii] = Math.Log10(y_out[ii]) * 10;
-            }
-            //Console.WriteLine("高速フーリエ変換を終了します");
-
-            return y_out;
+            ActiveComplex acmp = new ActiveComplex(y, Fourier.WindowFunc.Hamming);
+            acmp.FTransform(Fourier.ComplexFunc.FFT);
+            return acmp.GetMagnitude().ToArray();
         }
         public static Complex[] Manual_DoFFT(double[] y) //本体
         {
-            // 要素数をチェックします。
-            int Lines = EnableLines(y.Length);
-            //Console.WriteLine("要素数をチェックしました。\ndT = {0}\ndF = {1}", 44100.0 / y.Length, 1 / 44100.0);
-
-            //Console.WriteLine("高速フーリエ変換を開始します");
-            Complex[] sign = new Complex[Lines];
-            Complex[] do_dft = new Complex[Lines];
-
-            double[] y_out = new double[Lines];
-
-            for (int i = 0; i < Lines; i++)
-                sign[i] = new Complex(y[i], 0);
-
-
-            do_dft = Fourier.FFT(sign);
-            //Console.WriteLine("高速フーリエ変換を終了します");
-
-            return do_dft;
-        }
-        private static int EnableLines(int length)
-        {
-            int LineValidCount = 1;
-            while (length >= LineValidCount) LineValidCount *= 2;
-            LineValidCount /= 2;
-            return LineValidCount;
+            ActiveComplex acmp = new ActiveComplex(y, Fourier.WindowFunc.Hamming);
+            return acmp.FTransform(Fourier.ComplexFunc.FFT);
         }
     }
-
+    public class ActiveComplex
+    {
+        private List<Complex> inbox;
+        private List<Complex> outbox;
+        public ActiveComplex(double[] items)
+        {
+            inbox = new List<Complex>(); outbox = new List<Complex>();
+            Add(items);
+        }
+        public ActiveComplex(Complex[] items)
+        {
+            inbox = new List<Complex>(); outbox = new List<Complex>();
+            inbox.AddRange(items);
+        }
+        public ActiveComplex(double[] items, Fourier.WindowFunc wfunc)
+        {
+            inbox = new List<Complex>(); outbox = new List<Complex>();
+            AddwithWindow(items, wfunc);
+        }
+        private void Add(double[] items)
+        {
+            foreach (double item in items)
+            {
+                Complex tmp = new Complex(item, 0);
+                inbox.Add(tmp);
+            }
+        }
+        private void AddwithWindow(double[] items, Fourier.WindowFunc wfunc)
+        {
+            double[] items2 = Fourier.Windowing(items, wfunc);
+            foreach (double item in items2)
+            {
+                Complex tmp = new Complex(item, 0);
+                inbox.Add(tmp);
+            }
+        }
+        public IEnumerable<double> GetMagnitude()
+        {
+            foreach (Complex item in outbox)
+                yield return item.magnitude;
+        }
+        public Complex[] FTransform(Fourier.ComplexFunc cfunc)
+        {
+            outbox.AddRange(Fourier.FTransform(inbox.ToArray(), cfunc));
+            return outbox.ToArray();
+        }
+    }
     /// <summary>
-    /// なんか難しい構造体です。
-    /// フーリエ変換後の値を格納します。
+    /// 複素数を実部虚部に分けて格納する構造体です。
+    /// フーリエ変換後の値を扱います。
     /// </summary>
     public class Complex
     {
@@ -288,10 +216,8 @@ namespace function
             this.real = real;
             this.img = img;
         }
-
         /// <summary>
-        /// 文字出力のオーバライド
-        /// Ex: 3+5i = "3+5i"
+        /// 
         /// </summary>
         /// <returns></returns>
         override public string ToString()
@@ -299,8 +225,6 @@ namespace function
             string data = real.ToString() + "+" + img.ToString() + "i";
             return data;
         }
-
-
         /// <summary>
         /// 極座標からx-y座標への変換
         /// </summary>
@@ -312,8 +236,6 @@ namespace function
             Complex data = new Complex(r * Math.Cos(radians), r * Math.Sin(radians));
             return data;
         }
-
-
         /// <summary>
         /// 複素数同士の和
         /// </summary>
@@ -325,8 +247,6 @@ namespace function
             Complex data = new Complex(a.real + b.real, a.img + b.img);
             return data;
         }
-
-
         /// <summary>
         /// 複素数同士の差
         /// </summary>
@@ -338,8 +258,6 @@ namespace function
             Complex data = new Complex(a.real - b.real, a.img - b.img);
             return data;
         }
-
-
         /// <summary>
         /// 複素数同士の積
         /// </summary>
@@ -352,10 +270,8 @@ namespace function
            (a.real * b.img + (a.img * b.real)));
             return data;
         }
-   
-
         /// <summary>
-        /// 複素数同士の商
+        /// 振幅スペクトル
         /// </summary>
         public double magnitude
         {
@@ -364,9 +280,8 @@ namespace function
                 return Math.Sqrt(Math.Pow(real, 2) + Math.Pow(img, 2));
             }
         }
-
         /// <summary>
-        /// Re-Im 平面上の単位円における偏角
+        /// 位相スペクトル
         /// </summary>
         public double phase
         {
@@ -376,20 +291,20 @@ namespace function
             }
         }
     }
-
-
     /// <summary>
     ///  + enum WindowFunc : 窓関数オプション
     ///  + double[] Windowing(double[] data, WindowFunc windowFunc)
     ///  + Complex[] DFT(Complex[] x)
     /// </summary>
-    static class Fourier
+    public static class Fourier
     {
-
-        /// <summary>
-        /// 窓関数の選択
-        /// Windowing()の呼び出しでもこの列挙帯への参照を必要とします。
-        /// </summary>
+        public enum ComplexFunc
+        {
+            DFT,
+            IDFT,
+            FFT,
+            IFFT
+        }
         public enum WindowFunc
         {
             Hamming,
@@ -397,11 +312,8 @@ namespace function
             Blackman,
             Rectangular
         }
-
         /// <summary>
         /// 列挙帯により異なる方法で窓関数を働きかけます。
-        /// 現段階では、実行部から直接呼ぶこと、
-        /// つまり、窓関数を働かせ、フーリエ変換を働かせることは一連ではないので注意が必要です。
         /// </summary>
         /// <param name="data"></param>
         /// <param name="windowFunc"></param>
@@ -441,15 +353,28 @@ namespace function
             }
             return windata;
         }
-
-
+        public static Complex[] FTransform(Complex[] x, ComplexFunc func)
+        {
+            switch (func)
+            {
+                case ComplexFunc.DFT:
+                    return DFT(x);
+                case ComplexFunc.IDFT:
+                    return IDFT(x);
+                case ComplexFunc.FFT:
+                    return FFT(x);
+                case ComplexFunc.IFFT:
+                    return IFFT(x);
+            }
+            throw new ArgumentNullException();
+        }
         /// <summary>
         /// 離散フーリエ変換
         /// 回転子 double型 d_theta
         /// </summary>
         /// <param name="x"></param>
         /// <returns></returns>
-        public static Complex[] DFT(Complex[] x)
+        private static Complex[] DFT(Complex[] x)
         {
             int N = x.Length;
             Complex[] X = new Complex[N];
@@ -467,7 +392,7 @@ namespace function
             }
             return X;
         }
-        public static Complex[] IDFT(Complex[] x)
+        private static Complex[] IDFT(Complex[] x)
         {
             int N = x.Length;
             Complex[] X = new Complex[N];
@@ -489,16 +414,22 @@ namespace function
             }
             return X;
         }
-
+        private static int EnableLines(int length)
+        {
+            int LineValidCount = 1;
+            while (length >= LineValidCount) LineValidCount *= 2;
+            LineValidCount /= 2;
+            return LineValidCount;
+        }
         /// <summary>
         /// 高速フーリエ変換
         /// </summary>
         /// <param name="x"></param>
         /// <returns></returns>
-        public static Complex[] FFT(Complex[] x)
+        private static Complex[] FFT(Complex[] x)
         {
             //初期宣言
-            int N = x.Length;
+            int N = EnableLines(x.Length);
             Complex[] X = new Complex[N];
             Complex[] d, D, e, E;
             //例外処理
@@ -522,31 +453,31 @@ namespace function
             for (k = 0; k < N / 2; k++)
             {
                 //Complex temp = Complex.from_polar(1, -2 * Math.PI * k / N);
-		// k means -2*pi*( k / N ); k = 0 - N/2
-		// Exp(jm)*Exp(jn) 
-		// = Exp(j(m+n))
+		        // k means -2*pi*( k / N ); k = 0 - N/2
+		        // Exp(jm)*Exp(jn) 
+		        // = Exp(j(m+n))
 
-		// 複素数を複素単位円上にあると考えると、偏角の任意自然数倍*nの意味
-		// ここでは回転子の意味
-		// fft の再帰呼び出しの式及び他者コードを比較する上では
-		// 引数の偶数と奇数に分けたD,E及びそれ以下の再帰における挙動を
-		// 確認する
+		        // 複素数を複素単位円上にあると考えると、偏角の任意自然数倍*nの意味
+		        // ここでは回転子の意味
+		        // fft の再帰呼び出しの式及び他者コードを比較する上では
+		        // 引数の偶数と奇数に分けたD,E及びそれ以下の再帰における挙動を
+		        // 確認する
                 Complex temp = Complex.from_polar(1, d_theta * k);
                 D[k] *= temp;
             }
             for (k = 0; k < N / 2; k++)
             {
-		// 偶数
+		        // 偶数
                 X[k] = E[k] + D[k];
 		
                 X[k + N / 2] = E[k] - D[k];
             }
             return X;
         }
-        public static Complex[] IFFT(Complex[] x)
+        private static Complex[] IFFT(Complex[] x)
         {
             //初期宣言
-            int N = x.Length;
+            int N = EnableLines(x.Length);
             Complex[] X = new Complex[N];
             Complex[] d, D, e, E;
             //例外処理

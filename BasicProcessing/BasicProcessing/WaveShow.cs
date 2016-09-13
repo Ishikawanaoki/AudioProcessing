@@ -1,6 +1,7 @@
 ﻿using function;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 
@@ -115,7 +116,7 @@ namespace BasicProcessing
             }
 
             // 正規化を行います
-            y = myfunction.seikika(y);
+            y = myfunction.seikika(y).ToArray();
 
             for (int i = 0; i < xValues.Length; i++)
             {
@@ -306,8 +307,8 @@ namespace BasicProcessing
                 ldata2[ii] = ldata[ii];
                 rdata2[ii] = rdata[ii];
             }
-            ldata2 = myfunction.seikika(ldata2);
-            rdata2 = myfunction.seikika(rdata2);
+            ldata2 = myfunction.seikika(ldata2).ToArray();
+            rdata2 = myfunction.seikika(rdata2).ToArray();
 
             //PlaySound(tfilename);
             for (int iii = 0; iii < ldata2.Length; iii++)
@@ -437,6 +438,11 @@ namespace BasicProcessing
             for(int i=0; i<tw.Length; i++)
                 Console.WriteLine("{0}  : {1},{2},{3}", i, tw[i], sw[i], sample[i]);
 
+        }
+        private void test()
+        {
+            function.otherUser.MathematicalWave func = new function.otherUser.MathematicalWave();
+            func.exMain();
         }
         private double[] getSampleWave2()
         {
