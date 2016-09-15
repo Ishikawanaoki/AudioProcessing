@@ -59,7 +59,7 @@ namespace BasicProcessing
         /// やはり、データをフィールドとして持つには初期化が必要であり、
         /// またそのためにはフィールドに入力パスと出力パスを持ってしかるべきだと考える。
         /// </summary>
-        delegate void ShowGlaph(DataList datalist);
+        delegate void ShowGlaph(DataList<short> datalist);
 
         /// <summary>
         /// "実行"ボタン挿入による処理。
@@ -68,7 +68,7 @@ namespace BasicProcessing
         /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
-            DataList data = WavReader(IOFile[0], fileout, false);
+            DataList<short> data = WavReader(IOFile[0], fileout, false);
             label1.Text = IOFile[0];
             Console.WriteLine("読み出しが成功しました。");
 
@@ -81,7 +81,7 @@ namespace BasicProcessing
             ShowGlaph Glaph = new ShowGlaph(Show);
             Glaph(data);
         }
-        static void Show(DataList datalist)
+        static void Show(DataList<short> datalist)
         {
             WaveShow show = new WaveShow(datalist.lDataList, datalist.rDataList, datalist.WavHeader);
             show.Show();

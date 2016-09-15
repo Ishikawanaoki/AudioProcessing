@@ -12,9 +12,9 @@ namespace BasicProcessing
     /// </summary>
     public partial class WaveShow : Form
     {
-        double[] lDataList;
-        double[] rDataList;
-        WaveReAndWr.WavHeader header;
+        public double[] lDataList;
+        public double[] rDataList;
+        public WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
         /// <summary>
         /// 引数なしのコンストラクタは無効
@@ -151,7 +151,6 @@ namespace BasicProcessing
             SaveFile sf = new SaveFile(DoSaveFile);
             sf(1);
         }
-
         /// <summary>
         /// 現在のchar2を保存。
         /// </summary>
@@ -162,7 +161,6 @@ namespace BasicProcessing
             SaveFile sf = new SaveFile(DoSaveFile);
             sf(2);
         }
-
         /// <summary>
         /// 
         /// </summary>
@@ -223,127 +221,43 @@ namespace BasicProcessing
                 }
             }
         }
-
-        /// <summary>
-        /// クラス変数の追加
-        /// playerにより再生状況を記憶している
-        /// </summary>
-        private System.Media.SoundPlayer player = null;
-        /// <summary>
-        /// 参照先 waveFile を再生する
-        /// 不適切なファイルとして、現在無効
-        /// </summary>
-        /// <param name="waveFile"></param>
-        private void PlaySound(string waveFile)
-        {
-            //再生されているときは止める
-            if (player != null)
-                StopSound();
-
-            //読み込む
-            player = new System.Media.SoundPlayer(waveFile);
-
-            //非同期再生する
-            //player.Play();
-
-            //次のようにすると、ループ再生される
-            //player.PlayLooping();
-
-            //次のようにすると、最後まで再生し終えるまで待機する
-            player.PlaySync();
-        }
-
-        //再生されている音を止める
-        private void StopSound()
-        {
-            if (player != null)
-            {
-                player.Stop();
-                player.Dispose();
-                player = null;
-            }
-        }
         private void WaveShow_Load_1(object sender, EventArgs e)
         {
         }
-        /// <summary>
-        /// テストを行う対象を自動的に作るプログラム
-        /// </summary>
-        public void initsample()
+        private void testmyanalys(int divnum)
         {
-            // データ列リストの宣言、初期化
-            List<short> ldata = new List<short>();
-            List<short> rdata = new List<short>();
-            // テスト対象ファイル名
-            string longbinarysample = root + @"\bsample";
-            // 空の文字列
-            string tfilename = "";
-            string[] InFile = new string[]
-            {
-                @"..\..\音ファイル\a1.wav",//@"..\..\音ファイル\a1s.wav",
-                @"..\..\音ファイル\b1.wav",
-                @"..\..\音ファイル\c1.wav",//@"..\..\音ファイル\c1s.wav",@"..\..\音ファイル\c2.wav",
-                @"..\..\音ファイル\d1.wav",//@"..\..\音ファイル\d1s.wav",
-                @"..\..\音ファイル\e1.wav",
-                @"..\..\音ファイル\f1.wav",//@"..\..\音ファイル\f1s.wav",
-                @"..\..\音ファイル\g1.wav"//,@"..\..\音ファイル\g1s.wav"
-            };
-            WaveReAndWr.DataList tmp;
-            for (int i = 0; i < InFile.Length; i++)
-            {
-                tmp = WaveReAndWr.WavReader(InFile[i], "", false);
-                ldata.AddRange(tmp.lDataList);
-                rdata.AddRange(tmp.rDataList);
-                if (i == 0) this.header = tmp.WavHeader;
-            }
-            tfilename = longbinarysample + "01.wav";
-            tmp = new WaveReAndWr.DataList(ldata, rdata, header);
-            WaveReAndWr.WavWriter(tfilename, tmp);
+            myfunction2.ComplexStaff ex = new myfunction2.ComplexStaff();
+            ex.DividedNum = divnum;
+            double[] RspeAna;
+            double[] LspeAna;
 
-            double[] ldata2 = new double[ldata.Count];
-            double[] rdata2 = new double[rdata.Count];
-            for (int ii = 0; ii < ldata.Count; ii++)
-            {
-                ldata2[ii] = ldata[ii];
-                rdata2[ii] = rdata[ii];
-            }
-            ldata2 = myfunction.seikika(ldata2).ToArray();
-            rdata2 = myfunction.seikika(rdata2).ToArray();
+            ex.RawSign = lDataList;
+            LspeAna = ex.DoSTDFT();
+            Console.WriteLine("LFる");
 
-            //PlaySound(tfilename);
-            for (int iii = 0; iii < ldata2.Length; iii++)
-            {
-                ldata[iii] = (short)ldata2[iii];
-                rdata[iii] = (short)rdata2[iii];
-            }
-            tfilename = longbinarysample + "02.wav";
-            tmp = new WaveReAndWr.DataList(ldata, rdata, header);
-            WaveReAndWr.WavWriter(tfilename, tmp);
+            Plot(lDataList, 1);
+            Plot(LspeAna, 2);
+
+            ex.RawSign = rDataList;
+            RspeAna = ex.DoSTDFT();
+            Console.WriteLine("RFる");
+
+            string filename = root + @"\mypractice.wave";
+            WaveReAndWr.DataList<double> dlist
+                = new WaveReAndWr.DataList<double>(new List<double>(LspeAna), new List<double>(RspeAna), header);
+
+            Write(filename, dlist, 5);
+        }
+        private void userdefined()
+        {
+            myfunction2.FrequencyDomein.PichDetect pitch = new myfunction2.FrequencyDomein.PichDetect(lDataList);
+            pitch.AnalyzeSound();
         }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            //test_idft();
-            int divnum = 200;
-            int[] LFru = new int[lDataList.Length / divnum];
-            int[] RFru = new int[rDataList.Length / divnum];
-            myfunction2.DSP_Class ex = new myfunction2.DSP_Class();
 
-            double[] speAna = new double[lDataList.Length / divnum];
-
-            // 参照渡しにより、フィールドの時系列データは正弦波で再生されている。
-            // 変数 LFru, RFru は divnum 個のサンプルで共通する周波数[Hz}で再生する
-            LFru = ex.complexSearchv02(ref lDataList, divnum, ref speAna);
-            Console.WriteLine("LFる");
-
-            Plot(lDataList, 1);
-            Plot(speAna, 2);
-
-            RFru = ex.complexSearchv02(ref rDataList, divnum, ref speAna);
-            Console.WriteLine("RFる");
-
-            string filename = root + @"\mypractice.wave";
-            Write(filename, lDataList, rDataList);
+            
 
 
             Console.WriteLine("アクションが終了しました。");
@@ -351,47 +265,34 @@ namespace BasicProcessing
         /// <summary>
         /// 任意の時系列データdataを、
         /// 任意の出力先filenameへと保存する。
-        ///  + 左右の主利を追加
+        ///  + データを任意整数倍に間引きすることで矩形波になると推測
         /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="data"></param>
-        private void Write(string filename, double[] Lindata, double[] Rindata)
+        /// <param name="filename">保存ファイル名</param>
+        /// <param name="Lindata">左</param>
+        /// <param name="Rindata">右</param>
+        /// <param name="times">間引きするデータ数</param>
+        private void Write(string filename, WaveReAndWr.DataList<double> dlist, int times)
         {
-            short[] ans = new short[Lindata.Length * 4];
-            int count = 0;
-            short tmp = 0;
-
-            for (int i = 0; i < ans.Length; i++)
-            {
-                if (i % 4 == 0)
-                {
-                    ans[i] = (short)Lindata[count++];
-                    tmp = ans[i];
-                }
-                ans[i] = tmp;
-            }
-
+            if (times <= 0) return; // 中止
+            int count = 0; // カウンタ変数
+            short Ltmp = 0; short Rtmp = 0; // 間引きの時に書き出す、値を格納
+            int size = dlist.rDataList.Count * times;
             List<short> Ldata = new List<short>();
-            Ldata.AddRange(ans);
-
-            count = 0; // *
-            for (int i = 0; i < ans.Length; i++)
-            {
-                if (i % 4 == 0)
-                {
-                    ans[i] = (short)Rindata[count++];
-                    tmp = ans[i];
-                }
-                ans[i] = tmp;
-            }
-
             List<short> Rdata = new List<short>();
-            Rdata.AddRange(ans);
+            for (int i = 0; i < size; i++)
+            {
+                if (i % times == 0)
+                {
+                    Ltmp = (short)dlist.lDataList[count];
+                    Rtmp = (short)dlist.rDataList[count];
+                }
+                Ldata.Add(Ltmp); // キャスト代入
+                Rdata.Add(Rtmp); // キャスト代入
+            }
             // フィールド変数から、ヘッダーを参照しています。
-            WaveReAndWr.DataList datalist = new WaveReAndWr.DataList(Ldata, Rdata, this.header);
+            WaveReAndWr.DataList<short> datalist = new WaveReAndWr.DataList<short>(Ldata, Rdata, dlist.WavHeader);
             WaveReAndWr.WavWriter(filename, datalist);
         }
-
         private void button4_Click(object sender, EventArgs e)
         {
             string safeFileName;
@@ -402,24 +303,19 @@ namespace BasicProcessing
             safeFileName = ofp.SafeFileName;
 
             safeFileName = root + "\\" + safeFileName;
-            WaveReAndWr.DataList data = WaveReAndWr.WavReader(safeFileName, "", false);
         }
-
         private void label3_Click(object sender, EventArgs e)
         {
 
         }
-
         private void label1_Click(object sender, EventArgs e)
         {
 
         }
-
         private void label2_Click(object sender, EventArgs e)
         {
 
         }
-
         private void button1_Click(object sender, EventArgs e)
         {
             testMathematicalWave();

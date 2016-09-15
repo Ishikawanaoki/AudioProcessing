@@ -152,21 +152,20 @@ namespace function
     }
     public class ActiveComplex
     {
-        private List<Complex> inbox;
-        private List<Complex> outbox;
+        private List<Complex> complex;
         public ActiveComplex(double[] items)
         {
-            inbox = new List<Complex>(); outbox = new List<Complex>();
+            complex = new List<Complex>();
             Add(items);
         }
         public ActiveComplex(Complex[] items)
         {
-            inbox = new List<Complex>(); outbox = new List<Complex>();
-            inbox.AddRange(items);
+            complex = new List<Complex>();
+            complex.AddRange(items);
         }
         public ActiveComplex(double[] items, Fourier.WindowFunc wfunc)
         {
-            inbox = new List<Complex>(); outbox = new List<Complex>();
+            complex = new List<Complex>();
             AddwithWindow(items, wfunc);
         }
         private void Add(double[] items)
@@ -174,7 +173,7 @@ namespace function
             foreach (double item in items)
             {
                 Complex tmp = new Complex(item, 0);
-                inbox.Add(tmp);
+                complex.Add(tmp);
             }
         }
         private void AddwithWindow(double[] items, Fourier.WindowFunc wfunc)
@@ -183,18 +182,73 @@ namespace function
             foreach (double item in items2)
             {
                 Complex tmp = new Complex(item, 0);
-                inbox.Add(tmp);
+                complex.Add(tmp);
             }
         }
+        /// <summary>
+        /// 振幅スペクトル列を返す
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<double> GetMagnitude()
         {
-            foreach (Complex item in outbox)
+            foreach (Complex item in complex)
                 yield return item.magnitude;
         }
+        /// <summary>
+        /// 内部で振幅スペクトルを算出し、ランク付けを行う
+        /// </summary>
+        /// <param name="rank">上位第rank位までのスペクトルを採用する</param>
+        /// <returns>タップルには item1:</returns>
+        public Tuple<double[], List<LinkedList<int>>> Ranked(int rank)
+        {
+            List<double> ans = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
+            List<LinkedList<int>> ansIndex = new List<LinkedList<int>>(); // List.Count=rank. LinkedList.Count<=2
+            IEnumerable<double> str = GetMagnitude();
+            #region 配列ansの決定
+            for (int i=0; i<rank; i++)
+            {
+                double[] Imax = new double[1];//要素数1の配列を用意
+                Imax[0] = str.Max();//最大値
+                ans.AddRange(Imax);
+                str.Except(Imax);
+            }
+            #endregion
+            double[] str2 = GetMagnitude().ToArray();
+            for(int ii=0; ii<str2.Length; ii++)
+            {
+                LinkedList<int> tmp = new LinkedList<int>();
+                for(int j=0; j<ans.Count; j++)
+                {
+                    if (str2[ii] == ans[j]) tmp.AddLast(ii);
+                }
+                ansIndex.Add(tmp);
+            }
+            return Tuple.Create(ans.ToArray(), ansIndex);
+        }
+        public IEnumerable<double> RankedMagnitude(int rank)
+        {
+            Tuple<double[], List<LinkedList<int>>> complexobj = Ranked(rank);
+            foreach(double magnitude in GetMagnitude())
+            {
+                double tmp = 0.0;
+                foreach(double item in complexobj.Item1)
+                {
+                    if (magnitude == item)
+                        tmp = item;
+                }
+                yield return tmp;
+            }
+        }
+        /// <summary>
+        /// 正方向、逆方向でのフーリエ解析呼び出し。
+        /// 呼出しと共に、フィールド outbox は生成し直す。
+        /// </summary>
+        /// <param name="cfunc"></param>
+        /// <returns></returns>
         public Complex[] FTransform(Fourier.ComplexFunc cfunc)
         {
-            outbox.AddRange(Fourier.FTransform(inbox.ToArray(), cfunc));
-            return outbox.ToArray();
+            complex = new List<Complex>(Fourier.FTransform(complex.ToArray(), cfunc));
+            return complex.ToArray();
         }
     }
     /// <summary>
@@ -303,7 +357,8 @@ namespace function
             DFT,
             IDFT,
             FFT,
-            IFFT
+            IFFT,
+            STDFT
         }
         public enum WindowFunc
         {
@@ -559,13 +614,13 @@ namespace function
         /// <summary>
         /// 
         /// </summary>
-        public struct DataList
+        public struct DataList<T>
         {
-            public List<short> lDataList;
-            public List<short> rDataList;
+            public List<T> lDataList;
+            public List<T> rDataList;
             public WavHeader WavHeader;
 
-            public DataList(List<short> lDataList, List<short> rDataList, WavHeader WavHeader)
+            public DataList(List<T> lDataList, List<T> rDataList, WavHeader WavHeader)
             {
                 this.lDataList = lDataList;
                 this.rDataList = rDataList;
@@ -588,7 +643,7 @@ namespace function
         /// if分岐が無効であれば適当な文字列でもよいです。
         /// <param name="flag"></param>
         /// <returns></returns>
-        public static DataList WavReader(string args, string fileout, Boolean flag)
+        public static DataList<short> WavReader(string args, string fileout, Boolean flag)
         {
             WavHeader Header = new WavHeader();
             List<short> lDataList = new List<short>();
@@ -608,7 +663,7 @@ namespace function
                     if (Header.format != 1) // 入力がリニアPCM出ない時のダミー操作
                     {
                         WavHeader dm = new WavHeader();
-                        DataList dmd = new DataList(lDataList, rDataList, dm);
+                        DataList<short> dmd = new DataList<short>(lDataList, rDataList, dm);
                         return dmd;
                     }
                     Header.channels = br.ReadUInt16();
@@ -658,7 +713,7 @@ namespace function
                 kekkaout.Close();
             }
 
-            DataList datalist = new DataList(lDataList, rDataList, Header);
+            DataList<short> datalist = new DataList<short>(lDataList, rDataList, Header);
             return datalist;
 
         }
@@ -667,7 +722,7 @@ namespace function
         /// </summary>
         /// <param name="args"></param>
         /// <param name="datalist"></param>
-        public static void WavWriter(string args, DataList datalist)
+        public static void WavWriter(string args, DataList<short> datalist)
         {
 
             List<short> lNewDataList = datalist.lDataList;
@@ -726,56 +781,6 @@ namespace function
             }
         }
         /// <summary>
-        /// バイナリファイル fileName を読み込み、1行ずつ読み込み
-        /// その値をdouble配列で返却します。
-        /// データ列は最大値と比べたパーセント率を示します。
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        public static double[] includeFile(string fileName)
-        {
-            string buf;
-            double aver, amax, sum, aby, seikika;
-            aver = 0; amax = 0; sum = 0; aby = 0; seikika = 0;
-            int Nmax = GetLinesOfTextFile(fileName);
-
-            //signal
-            double[] y = new double[Nmax];
-
-
-            System.IO.StreamReader koeFile = new System.IO.StreamReader(fileName);
-
-            for (int i = 0; i < Nmax; i++)
-            {
-                if (koeFile.Peek() == -1)    // ファイルの最後で有れば -1 を返す
-                    break;
-
-                buf = koeFile.ReadLine();
-
-                y[i] = Convert.ToDouble(buf);
-
-                sum += y[i];
-                if (amax < y[i]) amax = y[i];
-            }
-            koeFile.Close();
-            aver = sum / Nmax; sum = 0;
-            aby = amax;
-            for (int i = 0; i < Nmax; i++)
-            {
-                y[i] -= aver;
-                sum += y[i]; //　この最大値は、平均値を除去した後のもの【使わない】
-                if (aby > y[i]) aby = y[i];
-            }
-            seikika = aby * (-1);
-            if (seikika < amax) seikika = amax;
-            // seikika は正規化をするために、信号値の絶対値の最大値を格納
-            for (int i = 0; i < Nmax; i++)
-            {
-                y[i] = y[i] / seikika * 100;
-            }
-            return y;
-        }
-        /// <summary>
         /// バイナリファイルの行数を取得し、
         /// その値以下の最大の2の乗数を返します。
         /// </summary>
@@ -794,6 +799,39 @@ namespace function
             while (LineCount >= LineValidCount) LineValidCount *= 2;
             LineValidCount /= 2;
             return LineValidCount;
+        }   
+    }
+    public class File
+    {
+        /// <summary>
+        /// バイナリファイル fileName を読み込み、1行ずつ読み込み
+        /// その値をdouble配列で返却します。
+        /// データ列は最大値と比べたパーセント率を示します。
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static double[] includeFile(string fileName)
+        {
+            double amin, amax;
+
+            //signal
+            List<double> y = new List<double>();
+
+            using (System.IO.StreamReader koeFile = new System.IO.StreamReader(fileName))
+            {
+                while (koeFile.Peek() != -1)
+                {
+                    y.Add(Convert.ToDouble(koeFile.ReadLine()));
+                }
+            }
+            amax = y.Max();
+            amin = y.Min();
+            if (amin < 0) amax += amin * (-1);
+            for (int i = 0; i < y.Count; i++)
+            {
+                y[i] = y[i] / amax * 100;
+            }
+            return y.ToArray();
         }
     }
 }
