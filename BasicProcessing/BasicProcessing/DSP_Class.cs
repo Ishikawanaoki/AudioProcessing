@@ -31,7 +31,7 @@ namespace myfunction2
             /// </summary>
             /// <param name="timeSample"></param>
             /// <returns></returns>
-            public static IEnumerable<int> filter(double[] timeSample)
+            public static IEnumerable<int> fIndexOfChangepoint(double[] timeSample)
             {
                 int i = -1;
                 foreach (int item in IndexOfChangepoint(timeSample))
@@ -44,17 +44,74 @@ namespace myfunction2
     }
     namespace FrequencyDomein
     {
-        public class PichDetect
+        public class TestPitchDetect
+        {
+            int Nmax;
+            double[] rawSign;
+            LinkedList<List<double>> storage;
+            public TestPitchDetect(int Nmax, double[] rawSign)
+            {
+                this.Nmax = Nmax;
+                this.rawSign = rawSign;
+                storage = new LinkedList<List<double>>();
+            }
+            public void assignTime(int select)
+            {
+                switch (select)
+                {
+                    case 1:
+                        double[] tmp = new double[rawSign.Length/Nmax];
+                        int count = 0;
+                        foreach(double sign in rawSign)
+                        {
+                            if(count > tmp.Length)
+                            {
+                                count = 0;
+                                storage.AddLast(new List<double>(tmp));
+                            }
+                            tmp[count++] = sign;
+                        }
+                        break;
+                    case 2:
+                        int[] changepoint = TimeDomein.effector.
+                            fIndexOfChangepoint(rawSign).ToArray();
+                        int pointcount = 0;
+                        List<double> tmp2 = new List<double>();
+                        for(int j=0; j<rawSign.Length; j++)
+                        {
+                            if(changepoint[pointcount] <= 2)
+                            {
+                                pointcount++;
+                                continue;
+                            }
+                            if (j == changepoint[pointcount] && tmp2.Count>2)
+                            {
+                                storage.AddLast(tmp2);
+                                tmp2 = new List<double>();
+                                pointcount++;
+                            }
+                            tmp2.Add(rawSign[j]);
+                        }
+                        if (tmp2.Count > 2)
+                            storage.AddLast(tmp2);
+                        break;
+                }
+            }
+        }
+        public class PitchDetect
         {
             // define here
-            private double threshold = 0.04f;    //ピッチとして検出する最小の分布
-            private int qSamples = 0;           //配列のサイズ
+            private double threshold = 0.04f;    // ピッチとして検出する最小の分布
+            private int qSamples = 0;            // 配列のサイズ
+
             // define in costractor
-            private double[] spectrum;           //FFTされたデータ
-            private double fSample = 44100;              //サンプリング周波数
+            private double[] spectrum;           // FFTされたデータ
+            private double fSample = 44100;      // サンプリング周波数
+
             // undefine : 分析結果の格納先
-            private double pitchValue;           //ピッチの周波数
-            public PichDetect(double[] timeSample)
+            private double pitchValue;           // ピッチの周波数
+
+            public PitchDetect(double[] timeSample)
             {
                 ActiveComplex ac = new ActiveComplex(timeSample, Fourier.WindowFunc.Blackman);
                 ac.FTransform(Fourier.ComplexFunc.FFT); // array size is available
@@ -244,17 +301,14 @@ namespace myfunction2
         private double[] rawSign;   // 変換前の波形データ（全体）
         private int shortLength;    // 短時間に対応するデータ数
         private double[] shortSign; // 任意の単位時間内の波形データ
-        //private int indexshortSign;
-        public int DividedNum
+        public ComplexStaff(int dividedNum, double[] rawSign)
         {
-            set { dividedNum = value; }
-        }
-        public double[] RawSign
-        {
-            set
-            {
-                rawSign = value;
-            }
+            this.dividedNum = dividedNum;
+            this.rawSign = rawSign;
+
+            if (dividedNum > 0)
+                shortLength = rawSign.Length / dividedNum;
+            shortSign = new double[shortLength];
         }
         /// <summary>
         /// shortLength個のデータを、配列shortSignへ割り当てる。
@@ -263,9 +317,11 @@ namespace myfunction2
         /// <param name="sign"></param>
         private void AssignSignal(int groupIndex)
         {
-            shortSign = rawSign.Skip(groupIndex * shortLength).TakeWhile(i => i <= shortLength).ToArray();
+            //shortSign = 
+            //  rawSign.Skip(groupIndex * shortLength).TakeWhile(i => i <= shortLength).ToArray();
+            Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
         }
-        private double[] convert()
+        private double[] RankedMagnitudeConvert()
         {
             ActiveComplex ac = new ActiveComplex(shortSign, Fourier.WindowFunc.Blackman);
             ac.FTransform(Fourier.ComplexFunc.FFT);
@@ -274,19 +330,16 @@ namespace myfunction2
         }
         public double[] DoSTDFT()
         {
-            if (dividedNum > 0)
-            {
-                shortLength = (int)(rawSign.Length / dividedNum);
-            }
-
             List<double> ans = new List<double>();
+
             #region time-waveform to time-wavefor
-            for(int i=0; i<dividedNum; i++)
+            for(int i=0; i<dividedNum; i++)//過剰な後方の要素は切り捨てる
             {
                 AssignSignal(i);
-                ans.AddRange(convert());
+                ans.AddRange(RankedMagnitudeConvert());
             }
             #endregion
+
             return ans.ToArray();
         }
     }

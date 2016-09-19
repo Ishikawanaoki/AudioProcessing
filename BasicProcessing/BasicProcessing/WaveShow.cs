@@ -226,38 +226,41 @@ namespace BasicProcessing
         }
         private void testmyanalys(int divnum)
         {
-            myfunction2.ComplexStaff ex = new myfunction2.ComplexStaff();
-            ex.DividedNum = divnum;
+            myfunction2.ComplexStaff ex 
+                = new myfunction2.ComplexStaff(divnum, lDataList);
+
             double[] RspeAna;
             double[] LspeAna;
 
-            ex.RawSign = lDataList;
+
             LspeAna = ex.DoSTDFT();
-            Console.WriteLine("LFる");
+            Console.WriteLine("LFの実行");
 
             Plot(lDataList, 1);
             Plot(LspeAna, 2);
 
-            ex.RawSign = rDataList;
+            ex = new myfunction2.ComplexStaff(divnum, rDataList);
             RspeAna = ex.DoSTDFT();
-            Console.WriteLine("RFる");
+            Console.WriteLine("RFの実行");
 
             string filename = root + @"\mypractice.wave";
             WaveReAndWr.DataList<double> dlist
                 = new WaveReAndWr.DataList<double>(new List<double>(LspeAna), new List<double>(RspeAna), header);
 
             Write(filename, dlist, 5);
+            Console.WriteLine("{0}を保存しました", filename);
         }
         private void userdefined()
         {
-            myfunction2.FrequencyDomein.PichDetect pitch = new myfunction2.FrequencyDomein.PichDetect(lDataList);
+            myfunction2.FrequencyDomein.PichDetect pitch
+                = new myfunction2.FrequencyDomein.PichDetect(lDataList);
             pitch.AnalyzeSound();
         }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
 
-            
+            testmyanalys(200);
 
 
             Console.WriteLine("アクションが終了しました。");

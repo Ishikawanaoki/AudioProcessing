@@ -195,48 +195,56 @@ namespace function
                 yield return item.magnitude;
         }
         /// <summary>
-        /// 内部で振幅スペクトルを算出し、ランク付けを行う
+        /// 1つの切り取り時間において、振幅スペクトルをランク付けする
         /// </summary>
         /// <param name="rank">上位第rank位までのスペクトルを採用する</param>
-        /// <returns>タップルには item1:</returns>
+        /// <returns>タップルには 
+        /// item1 : ans : 
+        /// item2 : 
+        /// が取り出せるようにしている。
+        /// </returns>
         public Tuple<double[], List<LinkedList<int>>> Ranked(int rank)
         {
             List<double> ans = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
             List<LinkedList<int>> ansIndex = new List<LinkedList<int>>(); // List.Count=rank. LinkedList.Count<=2
             IEnumerable<double> str = GetMagnitude();
+
             #region 配列ansの決定
             for (int i=0; i<rank; i++)
             {
-                double[] Imax = new double[1];//要素数1の配列を用意
-                Imax[0] = str.Max();//最大値
-                ans.AddRange(Imax);
-                str.Except(Imax);
+                double[] Imax = new double[1];  //要素数1の配列を用意
+                Imax[0] = str.Max();            //最大値
+                ans.AddRange(Imax);             //最大の振幅スペクトルを格納
+                str.Except(Imax);               //最大の振幅スペクトルを除外
             }
             #endregion
+
             double[] str2 = GetMagnitude().ToArray();
             for(int ii=0; ii<str2.Length; ii++)
             {
                 LinkedList<int> tmp = new LinkedList<int>();
-                for(int j=0; j<ans.Count; j++)
+                foreach(double RankedValue in ans)
                 {
-                    if (str2[ii] == ans[j]) tmp.AddLast(ii);
+                    if (str2[ii] == RankedValue)
+                        tmp.AddLast(ii); // 周波数軸上の位置に該当する、スペクトル位置を格納
                 }
-                ansIndex.Add(tmp);
+                ansIndex.Add(tmp);       // 短時間単位に、複数の周波数軸データを格納
             }
             return Tuple.Create(ans.ToArray(), ansIndex);
         }
+        /// <summary>
+        /// complexObj : 上位rank位までのスペクトルの大きさ、その位置
+        /// </summary>
+        /// <param name="rank"></param>
+        /// <returns></returns>
         public IEnumerable<double> RankedMagnitude(int rank)
         {
-            Tuple<double[], List<LinkedList<int>>> complexobj = Ranked(rank);
-            foreach(double magnitude in GetMagnitude())
+            Tuple<double[], List<LinkedList<int>>> complexObj = Ranked(rank);
+            double maxThrethold = complexObj.Item1[complexObj.Item1.Length - 1];
+            foreach (double magnitude in GetMagnitude())
             {
-                double tmp = 0.0;
-                foreach(double item in complexobj.Item1)
-                {
-                    if (magnitude == item)
-                        tmp = item;
-                }
-                yield return tmp;
+                if (magnitude > maxThrethold)
+                    yield return magnitude;
             }
         }
         /// <summary>
@@ -249,6 +257,12 @@ namespace function
         {
             complex = new List<Complex>(Fourier.FTransform(complex.ToArray(), cfunc));
             return complex.ToArray();
+        }
+        public double[] FunctionTie()
+        {
+            FTransform(Fourier.ComplexFunc.FFT);
+            FTransform(Fourier.ComplexFunc.IFFT);
+            return GetMagnitude().ToArray();
         }
     }
     /// <summary>
@@ -343,6 +357,11 @@ namespace function
             {
                 return Math.Atan(img / real); // アークタンジェントを返し、-n/2<=theta<=n/2となる値を返す
             }
+        }
+        public Complex ChangeToConjugate()
+        {
+            return new Complex(
+                this.real, this.img * (-1));
         }
     }
     /// <summary>
@@ -531,44 +550,29 @@ namespace function
         }
         private static Complex[] IFFT(Complex[] x)
         {
-            //初期宣言
-            int N = EnableLines(x.Length);
-            Complex[] X = new Complex[N];
-            Complex[] d, D, e, E;
-            //例外処理
-            if (N == 1)
-            {
-                X[0] = x[0];
-                return X;
-            }
+            List<Complex> y = new List<Complex>();
 
-            int k;
-            e = new Complex[N / 2];
-            d = new Complex[N / 2];
-            for (k = 0; k < N / 2; k++)
+            // Complex Conjugat to y
+            foreach (Complex item in x)
             {
-                e[k] = x[2 * k];
-                d[k] = x[2 * k + 1];
+                y.Add(item.ChangeToConjugate());
             }
-            D = FFT(d);
-            E = FFT(e);
-            double d_theta = 2 * Math.PI / N;
-            for (k = 0; k < N / 2; k++)
+            // FFT to x
+            x = FFT(y.ToArray());
+            int Nmax = x.Length;
+
+            // To get Complex Conjugat and to get magnitude : to y
+            y.Clear();
+            foreach (Complex item in x)
             {
-                Complex temp = Complex.from_polar(1, d_theta * k);
-                D[k] *= temp;
+                y.Add(
+                    new Complex(
+                        item.real / Nmax,
+                        item.img  / Nmax
+                        )
+                );
             }
-            for (k = 0; k < N / 2; k++)
-            {
-                X[k] = E[k] + D[k];
-                X[k + N / 2] = E[k] - D[k];
-            }
-            for(k = 0; k < X.Length; k++)
-            {
-                X[k].real /= N;
-                X[k].img /= N;
-            }
-            return X;
+            return y.ToArray();
         }
     }
     public class WaveReAndWr
