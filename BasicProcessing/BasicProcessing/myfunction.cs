@@ -64,6 +64,12 @@ namespace function
             time = 1 / sampling_frequency;
             frequency = sampling_frequency / sample_value;
         }
+        /// <summary>
+        /// axis[0] = time
+        /// axis[1] = frequency;
+        /// </summary>
+        /// <returns>
+        /// </returns>
         public double[] get_div()
         {
             double[] axis = new double[2];
@@ -100,7 +106,7 @@ namespace function
     /// 内部処理決定部
     /// (主要)
     /// </summary>
-    public class myfunction
+    public static class myfunction
     {
         /// <summary>
         /// 
@@ -113,46 +119,20 @@ namespace function
             foreach (double item in y)
                yield return (item / seikika * 100);
         }
-        public static double[] DoDFT(double[] y) //本体
-        {
-            ActiveComplex acmp = new ActiveComplex(y);
-            acmp.FTransform(Fourier.ComplexFunc.DFT);
-            return acmp.GetMagnitude().ToArray();
-        }
-        public static Complex[] Manual_DoDFT(double[] y) //本体
-        {
-            ActiveComplex acmp = new ActiveComplex(y);
-            return acmp.FTransform(Fourier.ComplexFunc.DFT);
-        }
-        public static IEnumerable<double> DoIDFT(Complex[] sign) //本体
-        {
-            ActiveComplex acmp = new ActiveComplex(sign);
-            Complex[] items = acmp.FTransform(Fourier.ComplexFunc.IDFT);
-            foreach (Complex item in items)
-                yield return item.real;
-        }
-        public IEnumerable<short> Do_s_IDFT(Complex[] sign) //本体
-        {
-            ActiveComplex acmp = new ActiveComplex(sign);
-            Complex[] items = acmp.FTransform(Fourier.ComplexFunc.IDFT);
-            foreach (Complex item in items)
-                yield return (short)item.real;
-        }
-        public static double[] DoFFT(double[] y) //本体
-        {
-            ActiveComplex acmp = new ActiveComplex(y, Fourier.WindowFunc.Hamming);
-            acmp.FTransform(Fourier.ComplexFunc.FFT);
-            return acmp.GetMagnitude().ToArray();
-        }
-        public static Complex[] Manual_DoFFT(double[] y) //本体
-        {
-            ActiveComplex acmp = new ActiveComplex(y, Fourier.WindowFunc.Hamming);
-            return acmp.FTransform(Fourier.ComplexFunc.FFT);
-        }
     }
+    /// <summary>
+    /// Copmlex, Fourier クラスの呼び出しを統括する意図で定義
+    /// フィールドにComplexリストを唯一保持して、なおかつその変更はメソッド呼出しにのみ有効
+    /// 短時間離散フーリエ変換においては、
+    /// </summary>
     public class ActiveComplex
     {
         private List<Complex> complex;
+        /// <summary>
+        /// double配列から呼び出される。
+        /// double[] => Complex[]にするためには、必ず内部でAdd()が呼び出される
+        /// </summary>
+        /// <param name="items"></param>
         public ActiveComplex(double[] items)
         {
             complex = new List<Complex>();
@@ -171,19 +151,13 @@ namespace function
         private void Add(double[] items)
         {
             foreach (double item in items)
-            {
-                Complex tmp = new Complex(item, 0);
-                complex.Add(tmp);
-            }
+                complex.Add(new Complex(item, 0));
         }
         private void AddwithWindow(double[] items, Fourier.WindowFunc wfunc)
         {
             double[] items2 = Fourier.Windowing(items, wfunc);
             foreach (double item in items2)
-            {
-                Complex tmp = new Complex(item, 0);
-                complex.Add(tmp);
-            }
+                complex.Add(new Complex(item, 0));
         }
         /// <summary>
         /// 振幅スペクトル列を返す
@@ -203,11 +177,11 @@ namespace function
         /// item2 : 
         /// が取り出せるようにしている。
         /// </returns>
-        public Tuple<double[], List<LinkedList<int>>> Ranked(int rank)
+        public Tuple<double[], List<List<int>>> Ranked(int rank)
         {
-            List<double> ans = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
-            List<LinkedList<int>> ansIndex = new List<LinkedList<int>>(); // List.Count=rank. LinkedList.Count<=2
-            IEnumerable<double> str = GetMagnitude();
+            List<double>            ans      = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
+            List<List<int>>   ansIndex = new List<List<int>>(); // List.Count=rank. LinkedList.Count<=2
+            IEnumerable<double>     str      = GetMagnitude();
 
             #region 配列ansの決定
             for (int i=0; i<rank; i++)
@@ -222,11 +196,11 @@ namespace function
             double[] str2 = GetMagnitude().ToArray();
             for(int ii=0; ii<str2.Length; ii++)
             {
-                LinkedList<int> tmp = new LinkedList<int>();
+                List<int> tmp = new List<int>();
                 foreach(double RankedValue in ans)
                 {
                     if (str2[ii] == RankedValue)
-                        tmp.AddLast(ii); // 周波数軸上の位置に該当する、スペクトル位置を格納
+                        tmp.Add(ii); // 周波数軸上の位置に該当する、スペクトル位置を格納
                 }
                 ansIndex.Add(tmp);       // 短時間単位に、複数の周波数軸データを格納
             }
@@ -239,13 +213,34 @@ namespace function
         /// <returns></returns>
         public IEnumerable<double> RankedMagnitude(int rank)
         {
-            Tuple<double[], List<LinkedList<int>>> complexObj = Ranked(rank);
+            Tuple<double[], List<List<int>>> complexObj
+                = Ranked(rank);
             double maxThrethold = complexObj.Item1[complexObj.Item1.Length - 1];
             foreach (double magnitude in GetMagnitude())
             {
                 if (magnitude > maxThrethold)
                     yield return magnitude;
             }
+        }
+        public List<List<double>> ReturnHeldz(int rank)
+        {
+            Tuple<double[], List<List<int>>> complexObj
+                = Ranked(rank);
+            List<List<double>> heldz = new List<List<double>>();
+            foreach(List<int> item in complexObj.Item2)
+            {
+                int sample_value = item.Count;
+                Axis axis = new Axis(sample_value, 44100);
+                double axis_fru = axis.get_div()[1];
+
+                List<double> ans = new List<double>();
+                foreach(int item2 in item)
+                {
+                    ans.Add(item2 * axis_fru);
+                }
+                heldz.Add(ans);
+            }
+            return heldz;
         }
         /// <summary>
         /// 正方向、逆方向でのフーリエ解析呼び出し。
@@ -376,8 +371,7 @@ namespace function
             DFT,
             IDFT,
             FFT,
-            IFFT,
-            STDFT
+            IFFT
         }
         public enum WindowFunc
         {
@@ -697,12 +691,12 @@ namespace function
             {
                 string tmp;
                 StreamWriter kekkaout = new StreamWriter(fileout);
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.riffID);
+                    tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.riffID);
                 kekkaout.WriteLine("riffID : " + tmp);
                 kekkaout.WriteLine(Header.size);
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.wavID);
+                    tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.wavID);
                 kekkaout.WriteLine("wavID : " + tmp);
-                tmp = Encoding.GetEncoding("shift_jis").GetString(Header.fmtID);
+                    tmp = Encoding.GetEncoding("shift_jis").GetString(Header.fmtID);
                 kekkaout.WriteLine("fmtID : " + tmp);
                 kekkaout.WriteLine(Header.fmtSize);
                 kekkaout.WriteLine(Header.format);

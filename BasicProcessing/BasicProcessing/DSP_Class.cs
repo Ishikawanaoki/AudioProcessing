@@ -55,7 +55,7 @@ namespace myfunction2
                 this.rawSign = rawSign;
                 storage = new LinkedList<List<double>>();
             }
-            public void assignTime(int select)
+            private void assignTime(int select)
             {
                 switch (select)
                 {
@@ -321,26 +321,42 @@ namespace myfunction2
             //  rawSign.Skip(groupIndex * shortLength).TakeWhile(i => i <= shortLength).ToArray();
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
         }
-        private double[] RankedMagnitudeConvert()
+        private Tuple<double[],double[]> RankedMagnitudeConvert()
         {
+            // 必ずこのメソッドより先に、配列への割り当てメソッドを呼ぶ
             ActiveComplex ac = new ActiveComplex(shortSign, Fourier.WindowFunc.Blackman);
             ac.FTransform(Fourier.ComplexFunc.FFT);
             //ac.GetMagnitude();
-            return ac.RankedMagnitude(5).ToArray();
+            double[] magnitude = ac.RankedMagnitude(5).ToArray();
+            foreach(List<double> item1 in ac.ReturnHeldz(5))
+            {
+                foreach(double item2 in item1)
+                {
+                    Console.Write("{0},", item2);
+                }
+            }
+            List<double> waveform = new List<double>();
+            foreach(Complex cmp in ac.FTransform(Fourier.ComplexFunc.IFFT))
+            {
+                waveform.Add(cmp.real);
+            }
+            return Tuple.Create(magnitude, waveform.ToArray());
         }
-        public double[] DoSTDFT()
+        public Tuple<double[], double[]> DoSTDFT()
         {
-            List<double> ans = new List<double>();
+            List<double> magnitudes = new List<double>();
+            List<double> waveform = new List<double>();
 
             #region time-waveform to time-wavefor
             for(int i=0; i<dividedNum; i++)//過剰な後方の要素は切り捨てる
             {
                 AssignSignal(i);
-                ans.AddRange(RankedMagnitudeConvert());
+                magnitudes.AddRange(RankedMagnitudeConvert().Item1);
+                waveform.AddRange(RankedMagnitudeConvert().Item2);
             }
             #endregion
 
-            return ans.ToArray();
+            return Tuple.Create(magnitudes.ToArray(), waveform.ToArray());
         }
     }
 }

@@ -60,8 +60,9 @@ namespace BasicProcessing
             // 以下、左側のデータ列を扱う
             //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
             Plot(lDataList, 1);
-            double[] tmp = myfunction.DoFFT(lDataList);
-            Plot(tmp, 2);
+            ActiveComplex acomp = new ActiveComplex(lDataList, Fourier.WindowFunc.Blackman);
+            acomp.FTransform(Fourier.ComplexFunc.FFT);
+            Plot(acomp.GetMagnitude().ToArray(), 2);
         }
         private void WaveShow_Load(object sender, EventArgs e)
         {
@@ -226,24 +227,22 @@ namespace BasicProcessing
         }
         private void testmyanalys(int divnum)
         {
-            myfunction2.ComplexStaff ex 
-                = new myfunction2.ComplexStaff(divnum, lDataList);
-
             double[] RspeAna;
             double[] LspeAna;
 
-
-            LspeAna = ex.DoSTDFT();
+            myfunction2.ComplexStaff ex
+                = new myfunction2.ComplexStaff(divnum, lDataList);
+            LspeAna = ex.DoSTDFT().Item2;
             Console.WriteLine("LFの実行");
 
             Plot(lDataList, 1);
             Plot(LspeAna, 2);
 
             ex = new myfunction2.ComplexStaff(divnum, rDataList);
-            RspeAna = ex.DoSTDFT();
+            RspeAna = ex.DoSTDFT().Item2;
             Console.WriteLine("RFの実行");
 
-            string filename = root + @"\mypractice.wave";
+            string filename = root + @"\mypractice.wav";
             WaveReAndWr.DataList<double> dlist
                 = new WaveReAndWr.DataList<double>(new List<double>(LspeAna), new List<double>(RspeAna), header);
 
@@ -252,15 +251,12 @@ namespace BasicProcessing
         }
         private void userdefined()
         {
-            myfunction2.FrequencyDomein.PichDetect pitch
-                = new myfunction2.FrequencyDomein.PichDetect(lDataList);
-            pitch.AnalyzeSound();
         }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
 
-            testmyanalys(200);
+            testmyanalys(2000);
 
 
             Console.WriteLine("アクションが終了しました。");
