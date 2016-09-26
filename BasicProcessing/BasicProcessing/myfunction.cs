@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms.DataVisualization.Charting;
 
 /// <summary>
 /// 前のプロジェクトからの名残を転々と映していたりしたため、
@@ -57,8 +58,8 @@ namespace function
     /// </summary>
     public class Axis
     {
-        public double time;        // 時間軸領域の目盛り
-        public double frequency;   // 周波数軸領域の目盛り
+        public double time;        // 時間軸領域の1目盛り
+        public double frequency;   // 周波数軸領域の1目盛り
         public Axis(double sample_value, double sampling_frequency)
         {
             time = 1 / sampling_frequency;
@@ -167,6 +168,11 @@ namespace function
         {
             foreach (Complex item in complex)
                 yield return item.magnitude;
+        }
+        public IEnumerable<double> GetReality()
+        {
+            foreach (Complex item in complex)
+                yield return item.real;
         }
         /// <summary>
         /// 1つの切り取り時間において、振幅スペクトルをランク付けする
@@ -353,10 +359,15 @@ namespace function
                 return Math.Atan(img / real); // アークタンジェントを返し、-n/2<=theta<=n/2となる値を返す
             }
         }
+        /// <summary>
+        /// 複素共役を返す。
+        /// </summary>
+        /// <returns></returns>
         public Complex ChangeToConjugate()
         {
             return new Complex(
-                this.real, this.img * (-1));
+                real, img * (-1)
+                );
         }
     }
     /// <summary>
@@ -549,10 +560,12 @@ namespace function
             // Complex Conjugat to y
             foreach (Complex item in x)
             {
+                // 複素共役
                 y.Add(item.ChangeToConjugate());
             }
             // FFT to x
             x = FFT(y.ToArray());
+            // 配列の要素数を有効にする
             int Nmax = x.Length;
 
             // To get Complex Conjugat and to get magnitude : to y
@@ -560,10 +573,7 @@ namespace function
             foreach (Complex item in x)
             {
                 y.Add(
-                    new Complex(
-                        item.real / Nmax,
-                        item.img  / Nmax
-                        )
+                    new Complex(item.real / Nmax,　item.img  / Nmax)
                 );
             }
             return y.ToArray();
@@ -650,6 +660,7 @@ namespace function
             using (FileStream fs = new FileStream(args, FileMode.Open, FileAccess.Read))
             using (System.IO.BinaryReader br = new BinaryReader(fs))
             {
+                #region 読み込み作業
                 try
                 {
                     Header.riffID = br.ReadBytes(4);
@@ -683,12 +694,14 @@ namespace function
                     if (br != null) br.Close();
                     if (fs != null) fs.Close();
                 }
+                #endregion
             }
 
 
             // trueなら、header情報の出力
             if (flag)
             {
+                #region flag == true
                 string tmp;
                 StreamWriter kekkaout = new StreamWriter(fileout);
                     tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.riffID);
@@ -709,6 +722,7 @@ namespace function
                 kekkaout.WriteLine("dID : " + tmp);
                 kekkaout.WriteLine(Header.dataSize);
                 kekkaout.Close();
+                #endregion
             }
 
             DataList<short> datalist = new DataList<short>(lDataList, rDataList, Header);
@@ -732,6 +746,7 @@ namespace function
             using (System.IO.FileStream fs = new FileStream(args, FileMode.Create, FileAccess.Write))
             using (BinaryWriter bw = new BinaryWriter(fs))
             {
+                #region 書き込み作業
                 try
                 {
                     bw.Write(Header.riffID);
@@ -776,6 +791,7 @@ namespace function
                     if (bw != null) bw.Close();
                     if (fs != null) fs.Close();
                 }
+                #endregion
             }
         }
         /// <summary>
@@ -830,6 +846,68 @@ namespace function
                 y[i] = y[i] / amax * 100;
             }
             return y.ToArray();
+        }
+        public Axis Plot(Chart str, double[] y, string area, string title)
+        {
+            string[] xValues = new string[y.Length / 2];
+
+            function.Axis plot_axis = new function.Axis(y.Length, 44100);
+            plot_axis.strighAxie(ref xValues);
+
+            str.Titles.Clear();
+            str.Series.Clear();
+            str.ChartAreas.Clear();
+
+            str.Series.Add(area);
+            str.ChartAreas.Add(new ChartArea(area));            // ChartArea作成
+            str.ChartAreas[area].AxisX.Title = "title";  // X軸タイトル設定
+            str.ChartAreas[area].AxisY.Title = "[/]";  // Y軸タイトル設定
+
+            str.Series[area].ChartType = SeriesChartType.Line;
+
+            // 正規化を行います
+            y = myfunction.seikika(y).ToArray();
+
+            for (int i = 0; i < xValues.Length; i++)
+            {
+                DataPoint dp = new DataPoint();
+                dp.SetValueXY(xValues[i], y[i]);  //XとYの値を設定
+                dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
+                str.Series[area].Points.Add(dp);   //グラフにデータ追加
+            }
+
+            return plot_axis;
+        }
+        /// <summary>
+        /// 任意の時系列データdataを、
+        /// 任意の出力先filenameへと保存する。
+        ///  + データを任意整数倍に間引きすることで矩形波になると推測
+        /// </summary>
+        /// <param name="filename">保存ファイル名</param>
+        /// <param name="Lindata">左</param>
+        /// <param name="Rindata">右</param>
+        /// <param name="times">間引きするデータ数</param>
+        public static void Write(string filename, WaveReAndWr.DataList<double> dlist, int times)
+        {
+            if (times <= 0) return; // 中止
+            int count = 0; // カウンタ変数
+            short Ltmp = 0; short Rtmp = 0; // 間引きの時に書き出す、値を格納
+            int size = dlist.rDataList.Count * times;
+            List<short> Ldata = new List<short>();
+            List<short> Rdata = new List<short>();
+            for (int i = 0; i < size; i++)
+            {
+                if (i % times == 0)
+                {
+                    Ltmp = (short)dlist.lDataList[count];
+                    Rtmp = (short)dlist.rDataList[count];
+                }
+                Ldata.Add(Ltmp); // キャスト代入
+                Rdata.Add(Rtmp); // キャスト代入
+            }
+            // フィールド変数から、ヘッダーを参照しています。
+            WaveReAndWr.DataList<short> datalist = new WaveReAndWr.DataList<short>(Ldata, Rdata, dlist.WavHeader);
+            WaveReAndWr.WavWriter(filename, datalist);
         }
     }
 }

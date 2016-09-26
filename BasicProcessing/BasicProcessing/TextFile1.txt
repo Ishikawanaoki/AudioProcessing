@@ -1,0 +1,26 @@
+﻿DSP
+| TimeDomain
+|| effector
+||| IEnumerable<int> IndexOfChangepoint(double[] timeSample)
+||| IEnumerable<int> fIndexOfChangepoint(double[] timeSample, int str)
+||| List<List<double>> assignTimewave(double[] rawSign, int Nmax, int select)
+|
+| FrequencyDomein
+|| TestPitchDetect
+|
+|| PitchDetect
+|
+|| ComplexStaff
+||| ComplexStaff(int dividedNum, double[] rawSign)
+||| void AssignSignal(int groupIndex)
+||| Tuple<double[],double[]> RankedMagnitudeConvert()
+||| Tuple<double[], double[]> DoSTDFT()
+
+function
+| Axis
+| Myfunction
+| ActiveComplex
+| Complex
+| Fourier
+| WaveReAndWr
+| File

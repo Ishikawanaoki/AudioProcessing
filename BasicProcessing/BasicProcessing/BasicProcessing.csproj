@@ -60,6 +60,12 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="TestFunction.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TestFunction.Designer.cs">
+      <DependentUpon>TestFunction.cs</DependentUpon>
+    </Compile>
     <Compile Include="myfunction.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -85,6 +91,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="TestFunction.resx">
+      <DependentUpon>TestFunction.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="WaveShow.resx">
       <DependentUpon>WaveShow.cs</DependentUpon>
     </EmbeddedResource>
@@ -104,6 +113,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="TextFile1.txt" />
     <Content Include="音ファイル\a1.wav" />
     <Content Include="音ファイル\a1s.wav" />
     <Content Include="音ファイル\b1.wav" />

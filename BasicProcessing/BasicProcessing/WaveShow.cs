@@ -59,89 +59,21 @@ namespace BasicProcessing
 
             // 以下、左側のデータ列を扱う
             //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
-            Plot(lDataList, 1);
+            Plot(chart1, lDataList);
             ActiveComplex acomp = new ActiveComplex(lDataList, Fourier.WindowFunc.Blackman);
             acomp.FTransform(Fourier.ComplexFunc.FFT);
-            Plot(acomp.GetMagnitude().ToArray(), 2);
+            Plot(chart2, acomp.GetMagnitude().ToArray());
         }
+        #region conPane
         private void WaveShow_Load(object sender, EventArgs e)
         {
 
         }
-        /// <summary>
-        /// グラフの二画面表示を行う。
-        /// 初期では左:時間領域、右:周波数領域で表示され、
-        /// 第二引数noによってグラフ位置の選択、グラフの更新を行う。
-        /// 
-        /// </summary>
-        /// <param name="y">1列のデータを用いて、グラフ表示します。</param>
-        /// <param name="no">2つのchartを分別して、描写対象を決定できる</param>
-        private void Plot(double[] y, int no)
+        private void WaveShow_Load_1(object sender, EventArgs e) { }
+        private void button1_Click(object sender, EventArgs e)
         {
-            Series seriesLine = new Series();
-            seriesLine.ChartType = SeriesChartType.Line; // 折れ線グラフ
-            seriesLine.LegendText = "Legend:Line";       // 凡例
-
-            string[] xValues = new string[y.Length / 2];
-
-            function.Axis plot_axis = new function.Axis(y.Length, 44100);
-            plot_axis.strighAxie(ref xValues);
-
-            switch (no)
-            {
-                case 1:
-                    chart1.Titles.Clear();
-                    chart1.Series.Clear();
-                    chart1.ChartAreas.Clear();
-
-                    chart1.Series.Add("Area1");
-                    chart1.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
-                    chart1.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
-                    chart1.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
-
-                    chart1.Series["Area1"].ChartType = SeriesChartType.Line;
-
-                    break;
-                case 2:
-                    chart2.Titles.Clear();
-                    chart2.Series.Clear();
-                    chart2.ChartAreas.Clear();
-
-                    chart2.Series.Add("Area2");
-                    chart2.ChartAreas.Add(new ChartArea("Area2"));            // ChartArea作成
-                    chart2.ChartAreas["Area2"].AxisX.Title = "周波数 f [Hz]";  // X軸タイトル設定
-                    chart2.ChartAreas["Area2"].AxisY.Title = "[/]";  // Y軸タイトル設定
-
-                    chart2.Series["Area2"].ChartType = SeriesChartType.Line;
-                    break;
-            }
-
-            // 正規化を行います
-            y = myfunction.seikika(y).ToArray();
-
-            for (int i = 0; i < xValues.Length; i++)
-            {
-                DataPoint dp = new DataPoint();
-                //グラフに追加するデータクラスを生成
-                switch (no)
-                {
-                    case 1:
-                        dp.SetValueXY(xValues[i], y[i]);  //XとYの値を設定
-                        dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
-                        chart1.Series["Area1"].Points.Add(dp);   //グラフにデータ追加
-                        break;
-                    case 2:
-                        dp.SetValueXY(xValues[i], y[i]);  //XとYの値を設定
-                        dp.IsValueShownAsLabel = false;  //グラフに値を表示するように指定
-                        chart2.Series["Area2"].Points.Add(dp);   //グラフにデータ追加
-                        break;
-                }
-            }
-            label1.Text = "DTime : " + plot_axis.time.ToString();
-            label2.Text = "DFreq : " + plot_axis.frequency.ToString();
-
+            testMathematicalWave();
         }
-
         /// <summary>
         /// 現在のchar1を保存。
         /// </summary>
@@ -162,10 +94,45 @@ namespace BasicProcessing
             SaveFile sf = new SaveFile(DoSaveFile);
             sf(2);
         }
+        private void button4_Click(object sender, EventArgs e)
+        {
+            string safeFileName;
+            OpenFileDialog ofp = new OpenFileDialog();
+            DialogResult dr;        // OpenfileDialog の結果を dr に格納
+            dr = ofp.ShowDialog(this);
+
+            safeFileName = ofp.SafeFileName;
+
+            safeFileName = root + "\\" + safeFileName;
+        }
+        private void label1_Click(object sender, EventArgs e) { }
+        private void label2_Click(object sender, EventArgs e) { }
+        private void label3_Click(object sender, EventArgs e) { }
+        private void chart1_Click(object sender, EventArgs e)
+        {
+
+        }
+        #endregion
         /// <summary>
         /// 
         /// </summary>
         /// <param name="no">chart No.{1 or 2}</param>
+        #region 画像の保存
+        /// <summary>
+        /// グラフの二画面表示を行う。
+        /// 初期では左:時間領域、右:周波数領域で表示され、
+        /// 第二引数noによってグラフ位置の選択、グラフの更新を行う。
+        /// 
+        /// </summary>
+        /// <param name="y">1列のデータを用いて、グラフ表示します。</param>
+        /// <param name="no">2つのchartを分別して、描写対象を決定できる</param>
+        private void Plot(Chart str, double[] y)
+        {
+            File f = new File();
+            function.Axis plot_axis = f.Plot(str, y, "Area1", "時間 [s]");
+            label1.Text = "DTime : " + plot_axis.time.ToString();
+            label2.Text = "DFreq : " + plot_axis.frequency.ToString();
+        }
         delegate void SaveFile(int no);
         public void DoSaveFile(int no)
         {
@@ -222,23 +189,21 @@ namespace BasicProcessing
                 }
             }
         }
-        private void WaveShow_Load_1(object sender, EventArgs e)
-        {
-        }
-        private void testmyanalys(int divnum)
+        #endregion
+        private void testMyAnalys(int divnum)
         {
             double[] RspeAna;
             double[] LspeAna;
 
-            myfunction2.ComplexStaff ex
-                = new myfunction2.ComplexStaff(divnum, lDataList);
+            DSP.ComplexStaff ex
+                = new DSP.ComplexStaff(divnum, lDataList);
             LspeAna = ex.DoSTDFT().Item2;
             Console.WriteLine("LFの実行");
 
-            Plot(lDataList, 1);
-            Plot(LspeAna, 2);
+            Plot(chart1, lDataList);
+            Plot(chart2, LspeAna);
 
-            ex = new myfunction2.ComplexStaff(divnum, rDataList);
+            ex = new DSP.ComplexStaff(divnum, rDataList);
             RspeAna = ex.DoSTDFT().Item2;
             Console.WriteLine("RFの実行");
 
@@ -246,87 +211,29 @@ namespace BasicProcessing
             WaveReAndWr.DataList<double> dlist
                 = new WaveReAndWr.DataList<double>(new List<double>(LspeAna), new List<double>(RspeAna), header);
 
-            Write(filename, dlist, 5);
+            File.Write(filename, dlist, 5);
             Console.WriteLine("{0}を保存しました", filename);
-        }
-        private void userdefined()
-        {
         }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-
-            testmyanalys(2000);
-
-
+            //testMyAnalys(2000);
+            DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
+            test.Execute();
             Console.WriteLine("アクションが終了しました。");
         }
+        #region history
         /// <summary>
-        /// 任意の時系列データdataを、
-        /// 任意の出力先filenameへと保存する。
-        ///  + データを任意整数倍に間引きすることで矩形波になると推測
+        /// 波形生成のためのテスト
         /// </summary>
-        /// <param name="filename">保存ファイル名</param>
-        /// <param name="Lindata">左</param>
-        /// <param name="Rindata">右</param>
-        /// <param name="times">間引きするデータ数</param>
-        private void Write(string filename, WaveReAndWr.DataList<double> dlist, int times)
-        {
-            if (times <= 0) return; // 中止
-            int count = 0; // カウンタ変数
-            short Ltmp = 0; short Rtmp = 0; // 間引きの時に書き出す、値を格納
-            int size = dlist.rDataList.Count * times;
-            List<short> Ldata = new List<short>();
-            List<short> Rdata = new List<short>();
-            for (int i = 0; i < size; i++)
-            {
-                if (i % times == 0)
-                {
-                    Ltmp = (short)dlist.lDataList[count];
-                    Rtmp = (short)dlist.rDataList[count];
-                }
-                Ldata.Add(Ltmp); // キャスト代入
-                Rdata.Add(Rtmp); // キャスト代入
-            }
-            // フィールド変数から、ヘッダーを参照しています。
-            WaveReAndWr.DataList<short> datalist = new WaveReAndWr.DataList<short>(Ldata, Rdata, dlist.WavHeader);
-            WaveReAndWr.WavWriter(filename, datalist);
-        }
-        private void button4_Click(object sender, EventArgs e)
-        {
-            string safeFileName;
-            OpenFileDialog ofp = new OpenFileDialog();
-            DialogResult dr;        // OpenfileDialog の結果を dr に格納
-            dr = ofp.ShowDialog(this);
-
-            safeFileName = ofp.SafeFileName;
-
-            safeFileName = root + "\\" + safeFileName;
-        }
-        private void label3_Click(object sender, EventArgs e)
-        {
-
-        }
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
-        private void button1_Click(object sender, EventArgs e)
-        {
-            testMathematicalWave();
-        }
         private void testMathematicalWave()
         {
             function.otherUser.MathematicalWave func = new function.otherUser.MathematicalWave();
             double[] tw = func.createTriangleWave(1, 1, 1, 200);
             double[] sw = func.createSawtoothWave(1, 1, 1, 200);
             double[] sample = getSampleWave(1, 1, 1, 200).ToArray();
-            Plot2(tw,getSampleWave2(),1);
-            Plot2(sw,getSampleWave2(), 2);
+            //Plot2(tw,getSampleWave2(),1);
+            //Plot2(sw,getSampleWave2(), 2);
             Console.WriteLine("tw.Length  : {0}", tw.Length);
             Console.WriteLine("sw.Length  : {0}", sw.Length);
             Console.WriteLine("sample.Length  : {0}", sample.Length);
@@ -357,87 +264,6 @@ namespace BasicProcessing
                     );
             return list;
         }
-        private void Plot2(double[] y, double[] y2, int no)
-        {
-            string[] xValues = new string[y.Length];
-
-            function.Axis plot_axis = new function.Axis(y.Length, 100);
-            plot_axis.strighAxie(ref xValues);
-
-            switch (no)
-            {
-                case 1:
-                    chart1.Titles.Clear();
-                    chart1.Series.Clear();
-                    chart1.ChartAreas.Clear();
-
-                    chart1.Series.Add("Area1");
-                    chart1.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
-                    chart1.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
-                    chart1.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
-
-                    chart1.Series.Add("SampleWave");
-                    chart1.ChartAreas.Add(new ChartArea("SampleWave"));            // ChartArea作成
-                    chart1.ChartAreas["SampleWave"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
-                    chart1.ChartAreas["SampleWave"].AxisY.Title = "[/]";  // Y軸タイトル設定
-
-                    chart1.Series["Area1"].ChartType = SeriesChartType.Line;
-                    chart1.Series["SampleWave"].ChartType = SeriesChartType.Line;
-
-                    break;
-                case 2:
-                    chart2.Titles.Clear();
-                    chart2.Series.Clear();
-                    chart2.ChartAreas.Clear();
-
-                    chart2.Series.Add("Area1");
-                    chart2.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
-                    chart2.ChartAreas["Area1"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
-                    chart2.ChartAreas["Area1"].AxisY.Title = "[/]";  // Y軸タイトル設定
-
-                    chart2.Series.Add("SampleWave");
-                    chart2.ChartAreas.Add(new ChartArea("SampleWave"));            // ChartArea作成
-                    chart2.ChartAreas["SampleWave"].AxisX.Title = "時間 t [s]";  // X軸タイトル設定
-                    chart2.ChartAreas["SampleWave"].AxisY.Title = "[/]";  // Y軸タイトル設定
-
-                    chart2.Series["Area1"].ChartType = SeriesChartType.Line;
-                    chart2.Series["SampleWave"].ChartType = SeriesChartType.Line;
-                    break;
-            }
-
-            for (int i = 0; i < xValues.Length; i++)
-            {
-                switch (no)
-                {
-                    case 1:
-                        DataPoint dp = new DataPoint();
-                        DataPoint dp1 = new DataPoint();
-                        dp.SetValueXY(xValues[i], y[i]);
-                        dp.IsValueShownAsLabel = false;
-                        chart1.Series["Area1"].Points.Add(dp);
-
-                        dp1.SetValueXY(xValues[i], y2[i]);
-                        dp1.IsValueShownAsLabel = false;
-                        chart1.Series["SampleWave"].Points.Add(dp1);
-                        break;
-                    case 2:
-                        DataPoint dp2 = new DataPoint();
-                        DataPoint dp3 = new DataPoint();
-                        dp2.SetValueXY(xValues[i], y[i]);
-                        dp2.IsValueShownAsLabel = false;
-                        chart2.Series["Area1"].Points.Add(dp2);
-
-                        dp3.SetValueXY(xValues[i], y2[i]);
-                        dp3.IsValueShownAsLabel = false;
-                        chart2.Series["SampleWave"].Points.Add(dp3);
-                        break;
-                }
-                
-
-            }
-            
-            label1.Text = "DTime : " + plot_axis.time.ToString();
-            label2.Text = "DFreq : " + plot_axis.frequency.ToString();
-        }
+        #endregion
     }
 }
