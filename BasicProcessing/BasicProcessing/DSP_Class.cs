@@ -243,6 +243,7 @@ namespace DSP
             if (dividedNum > 0)
                 shortLength = rawSign.Length / dividedNum;
             shortSign = new double[shortLength];
+            //長さが shortLength を超える場合は起こり得ない
         }
         /// <summary>
         /// shortLength個のデータを、配列shortSignへ割り当てる。
@@ -254,14 +255,24 @@ namespace DSP
             //shortSign = 
             //  rawSign.Skip(groupIndex * shortLength).TakeWhile(i => i <= shortLength).ToArray();
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
+            
         }
         private Tuple<double[],double[]> RankedMagnitudeConvert()
         {
-            // 必ずこのメソッドより先に、配列への割り当てメソッドを呼ぶ
+            // 必ずこのメソッドより先に、配列への割り当てメソッド AssignSignalを呼ぶ
+            // ActiveComplex は複素数の配列を内部に保持し、
+            // メソッド呼出しに対して、
+            // 複素数の配列を変化させ
+            // また、実行結果となる有効なオブジェクトを返す。
             ActiveComplex ac = new ActiveComplex(shortSign, Fourier.WindowFunc.Blackman);
+
+            // 内部への変化 あり
             ac.FTransform(Fourier.ComplexFunc.FFT);
-            //ac.GetMagnitude();
+
+            // 第一返り値 magnitude : 任意短時間における上位第5位のスペクトルの大きさ
+            // 内部への変化 なし
             double[] magnitude = ac.RankedMagnitude(5).ToArray();
+            
             foreach(List<double> item1 in ac.ReturnHeldz(5))
             {
                 foreach(double item2 in item1)
@@ -269,6 +280,8 @@ namespace DSP
                     Console.Write("{0},", item2);
                 }
             }
+
+            // 第二返り値 waveform :  
             List<double> waveform = new List<double>();
             foreach(Complex cmp in ac.FTransform(Fourier.ComplexFunc.IFFT))
             {
@@ -282,11 +295,14 @@ namespace DSP
             List<double> waveform = new List<double>();
 
             #region time-waveform to time-wavefor
-            for(int i=0; i<dividedNum; i++)//過剰な後方の要素は切り捨てる
+            for(int i=0; i<dividedNum; i++)
+                //過剰な後方の要素は切り捨てる
             {
+                Console.Write("i = {0} : ", i);
                 AssignSignal(i);
-                magnitudes.AddRange(RankedMagnitudeConvert().Item1);
-                waveform.AddRange(RankedMagnitudeConvert().Item2);
+                Tuple<double[], double[]> ans = RankedMagnitudeConvert();
+                magnitudes.AddRange(ans.Item1);
+                waveform.AddRange(ans.Item2);
             }
             #endregion
 

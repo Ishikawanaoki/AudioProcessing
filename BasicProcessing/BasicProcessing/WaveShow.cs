@@ -190,16 +190,26 @@ namespace BasicProcessing
             }
         }
         #endregion
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="divnum">波形の等分する分割数</param>
         private void testMyAnalys(int divnum)
         {
             double[] RspeAna;
             double[] LspeAna;
 
+            // 短時間フーリエ変換するための格納・実行クラスの生成
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(divnum, lDataList);
+
             LspeAna = ex.DoSTDFT().Item2;
             Console.WriteLine("LFの実行");
 
+            // 結果のグラフ表示
+            // 左側の波形について
+            // chart1 : 実行前の波形
+            // chart2 : 実行後の波形
             Plot(chart1, lDataList);
             Plot(chart2, LspeAna);
 
@@ -209,7 +219,10 @@ namespace BasicProcessing
 
             string filename = root + @"\mypractice.wav";
             WaveReAndWr.DataList<double> dlist
-                = new WaveReAndWr.DataList<double>(new List<double>(LspeAna), new List<double>(RspeAna), header);
+                = new WaveReAndWr.DataList<double>(
+                    new List<double>(LspeAna),
+                    new List<double>(RspeAna), 
+                    header);
 
             File.Write(filename, dlist, 5);
             Console.WriteLine("{0}を保存しました", filename);
@@ -217,9 +230,9 @@ namespace BasicProcessing
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            //testMyAnalys(2000);
-            DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
-            test.Execute();
+            testMyAnalys(2000);
+            //DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
+            //test.Execute();
             Console.WriteLine("アクションが終了しました。");
         }
         #region history

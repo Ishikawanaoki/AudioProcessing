@@ -186,7 +186,7 @@ namespace function
         public Tuple<double[], List<List<int>>> Ranked(int rank)
         {
             List<double>            ans      = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
-            List<List<int>>   ansIndex = new List<List<int>>(); // List.Count=rank. LinkedList.Count<=2
+            List<List<int>>   ansIndex       = new List<List<int>>(); // List.Count=rank. LinkedList.Count<=2
             IEnumerable<double>     str      = GetMagnitude();
 
             #region 配列ansの決定

@@ -23,7 +23,7 @@ namespace BasicProcessing
     public partial class Form1 : Form
     {
         //private DataList data;
-        private string root = @"..\..\音ファイル";
+        private static string root = @"..\..\音ファイル";
         string[] IOFile;
         string fileout; // ヘッダー情報
         public Form1()
@@ -33,12 +33,14 @@ namespace BasicProcessing
 
             InitializeComponent();
             IOFile = new string[2] {
-                root + @"\a1.wav",
-                root + @"\out\kekka_wav.txt" };
+                root + @"\a1.wav",              // 初期指定のバイナリ読み込み先
+                    // button3により更新、 button2により読み出し
+                root + @"\out\kekka_wav.txt"    // 初期指摘のバイナリ書き込み先
+                    // button2（無効）
+            };
 
-            // ヘッダー情報の出力先はWavReader内のifを有効にする
-            fileout = root + @"\out\wav_header.txt";
-
+            fileout = root + @"\out\wav_header.txt";　// ヘッダー情報
+                    // button2 WavReaderメソッドの引数をtrueなら有効（無効）
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -58,9 +60,9 @@ namespace BasicProcessing
         /// 　-> グラフ表示
         /// 　-> 時間／周波数の処理を行う -> グラフ表示
         /// 　-> etc
-        /// 色々考えたが、クラス変数としてデータDataListを持つしかないと考える。
-        /// やはり、データをフィールドとして持つには初期化が必要であり、
-        /// またそのためにはフィールドに入力パスと出力パスを持ってしかるべきだと考える。
+        /// クラス変数としてデータDataListを持つ。
+        /// データをフィールドとして持つには初期化が必要、
+        /// フィールドに入力パスと出力パスを持つ。
         /// </summary>
         delegate void ShowGlaph(DataList<short> datalist);
 
@@ -71,13 +73,14 @@ namespace BasicProcessing
         /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
-            DataList<short> data = WavReader(IOFile[0], fileout, true);
+            DataList<short> data = WavReader(IOFile[0], fileout, false);
             label1.Text = IOFile[0];
             Console.WriteLine("読み出しが成功しました。");
             
 
-            WavWriter(IOFile[1], data);
-            Console.WriteLine("書き出しが成功しました。");
+            // 同じﾊﾞｲﾅﾘﾌｧｲﾙを書き出す操作
+            //WavWriter(IOFile[1], data);
+            //Console.WriteLine("書き出しが成功しました。");
 
             // 以下(3)の動作
             // 委譲により、内部でのWaveShowウィンドウを作成、表示する。
