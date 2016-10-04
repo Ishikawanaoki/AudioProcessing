@@ -306,7 +306,7 @@ namespace DSP
                     for (int i = 0; i < dividedNum; i++)
                     //過剰な後方の要素は切り捨てる
                     {
-                        sw.Write("グループ = {0} : ", i);
+                        //sw.Write("グループ = {0} : ", i);
                         //AssignSignal(i);
                         Tuple<double[], double[]> ans = RankedMagnitudeConvert(i, sw); // Console 出力の継続
                         magnitudes.AddRange(ans.Item1);
