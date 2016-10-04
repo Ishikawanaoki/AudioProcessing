@@ -266,7 +266,8 @@ namespace DSP
             // 複素数の配列を変化させ
             // また、実行結果となる有効なオブジェクトを返す。
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Blackman);
-            int rank = 5;
+            int rank //= 5;
+                = 1;
             // 内部への変化 あり
             ac.FTransform(Fourier.ComplexFunc.FFT);
 
@@ -274,7 +275,7 @@ namespace DSP
             // 内部への変化 なし
             double[] magnitude = ac.RankedMagnitude(rank).ToArray();
 
-            sw.WriteLine("timelength : {0}", ac.Getlength());
+            //sw.WriteLine("timelength : {0}", ac.Getlength());
             foreach (List<double> item1 in ac.ReturnHeldz(rank))
             {
                 foreach(double item2 in function.otherUser.Music.effecientMusicalScale(item1.ToArray()))
@@ -300,7 +301,7 @@ namespace DSP
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                 {
-                    sw.WriteLine("全データ数 : {0}", rawSign.Length);
+                    //sw.WriteLine("全データ数 : {0}", rawSign.Length);
                     #region time-waveform to time-wavefor
                     for (int i = 0; i < dividedNum; i++)
                     //過剰な後方の要素は切り捨てる
