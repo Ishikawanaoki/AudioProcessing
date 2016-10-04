@@ -28,8 +28,8 @@ namespace BasicProcessing
         string fileout; // ヘッダー情報
         public Form1()
         {
-            TestFunction tf = new TestFunction();
-            tf.Show();
+            //TestFunction tf = new TestFunction();
+            //tf.Show();
 
             InitializeComponent();
             IOFile = new string[2] {

@@ -129,36 +129,32 @@ namespace function
     public class ActiveComplex
     {
         private List<Complex> complex;
+        private int _length;
         /// <summary>
         /// double配列から呼び出される。
         /// double[] => Complex[]にするためには、必ず内部でAdd()が呼び出される
         /// </summary>
         /// <param name="items"></param>
+        public int Getlength()
+        {
+            return complex.Count;
+        }
         public ActiveComplex(double[] items)
         {
             complex = new List<Complex>();
             Add(items);
         }
-        public ActiveComplex(Complex[] items)
-        {
-            complex = new List<Complex>();
-            complex.AddRange(items);
-        }
         public ActiveComplex(double[] items, Fourier.WindowFunc wfunc)
         {
             complex = new List<Complex>();
-            AddwithWindow(items, wfunc);
+            Add(Fourier.Windowing(items, wfunc));
         }
         private void Add(double[] items)
         {
             foreach (double item in items)
                 complex.Add(new Complex(item, 0));
-        }
-        private void AddwithWindow(double[] items, Fourier.WindowFunc wfunc)
-        {
-            double[] items2 = Fourier.Windowing(items, wfunc);
-            foreach (double item in items2)
-                complex.Add(new Complex(item, 0));
+            // Constructor must call this method
+            _length = complex.Count;
         }
         /// <summary>
         /// 振幅スペクトル列を返す
@@ -219,35 +215,36 @@ namespace function
         /// <returns></returns>
         public IEnumerable<double> RankedMagnitude(int rank)
         {
-            Tuple<double[], List<List<int>>> complexObj
-                = Ranked(rank);
+            Tuple<double[], List<List<int>>> complexObj = Ranked(rank);
             double maxThrethold = complexObj.Item1[complexObj.Item1.Length - 1];
             foreach (double magnitude in GetMagnitude())
             {
-                if (magnitude > maxThrethold)
+                if (magnitude >= maxThrethold)
                     yield return magnitude;
             }
         }
         public List<List<double>> ReturnHeldz(int rank)
         {
-            Tuple<double[], List<List<int>>> complexObj
-                = Ranked(rank);
+            Tuple<double[], List<List<int>>> complexObj = Ranked(rank);
             List<List<double>> heldz = new List<List<double>>();
-            foreach(List<int> item in complexObj.Item2)
-            {
-                int sample_value = item.Count;
-                Axis axis = new Axis(sample_value, 44100);
-                double axis_fru = axis.get_div()[1];
 
+            Axis axis = new Axis(_length, 44100);
+            double axis_fru = axis.get_div()[1];
+
+
+            foreach (List<int> item in complexObj.Item2)
+            {
                 List<double> ans = new List<double>();
                 foreach(int item2 in item)
                 {
-                    ans.Add(item2 * axis_fru);
+                    if (item2 < _length/2){ ans.Add(item2 * axis_fru); }
+                    else{ ans.Add(item2 * axis_fru * (-1)); }
                 }
                 heldz.Add(ans);
             }
             return heldz;
         }
+
         /// <summary>
         /// 正方向、逆方向でのフーリエ解析呼び出し。
         /// 呼出しと共に、フィールド outbox は生成し直す。

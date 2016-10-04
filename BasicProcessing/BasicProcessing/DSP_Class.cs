@@ -1,6 +1,7 @@
 ﻿using function;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -234,7 +235,7 @@ namespace DSP
         private int dividedNum;     // 分割数
         private double[] rawSign;   // 変換前の波形データ（全体）
         private int shortLength;    // 短時間に対応するデータ数
-        private double[] shortSign; // 任意の単位時間内の波形データ
+        //private double[] shortSign; // 任意の単位時間内の波形データ
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
             this.dividedNum = dividedNum;
@@ -242,7 +243,7 @@ namespace DSP
 
             if (dividedNum > 0)
                 shortLength = rawSign.Length / dividedNum;
-            shortSign = new double[shortLength];
+            //shortSign = new double[shortLength];
             //長さが shortLength を超える場合は起こり得ない
         }
         /// <summary>
@@ -250,34 +251,35 @@ namespace DSP
         /// </summary>
         /// <param name="groupIndex"></param>
         /// <param name="sign"></param>
-        private void AssignSignal(int groupIndex)
+        private double[] AssignSignal(int groupIndex)
         {
-            //shortSign = 
-            //  rawSign.Skip(groupIndex * shortLength).TakeWhile(i => i <= shortLength).ToArray();
+            double[] shortSign = new double[shortLength];
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
+            return shortSign;
             
         }
-        private Tuple<double[],double[]> RankedMagnitudeConvert()
+        private Tuple<double[],double[]> RankedMagnitudeConvert(int groupIndex, StreamWriter sw)
         {
             // 必ずこのメソッドより先に、配列への割り当てメソッド AssignSignalを呼ぶ
             // ActiveComplex は複素数の配列を内部に保持し、
             // メソッド呼出しに対して、
             // 複素数の配列を変化させ
             // また、実行結果となる有効なオブジェクトを返す。
-            ActiveComplex ac = new ActiveComplex(shortSign, Fourier.WindowFunc.Blackman);
-
+            ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Blackman);
+            int rank = 5;
             // 内部への変化 あり
             ac.FTransform(Fourier.ComplexFunc.FFT);
 
             // 第一返り値 magnitude : 任意短時間における上位第5位のスペクトルの大きさ
             // 内部への変化 なし
-            double[] magnitude = ac.RankedMagnitude(5).ToArray();
-            
-            foreach(List<double> item1 in ac.ReturnHeldz(5))
+            double[] magnitude = ac.RankedMagnitude(rank).ToArray();
+
+            sw.WriteLine("timelength : {0}", ac.Getlength());
+            foreach (List<double> item1 in ac.ReturnHeldz(rank))
             {
-                foreach(double item2 in item1)
+                foreach(double item2 in function.otherUser.Music.effecientMusicalScale(item1.ToArray()))
                 {
-                    Console.Write("{0},", item2);
+                        sw.Write("{0},", item2);
                 }
             }
 
@@ -289,22 +291,29 @@ namespace DSP
             }
             return Tuple.Create(magnitude, waveform.ToArray());
         }
-        public Tuple<double[], double[]> DoSTDFT()
+        public Tuple<double[], double[]> DoSTDFT(string filename)
         {
             List<double> magnitudes = new List<double>();
             List<double> waveform = new List<double>();
 
-            #region time-waveform to time-wavefor
-            for(int i=0; i<dividedNum; i++)
-                //過剰な後方の要素は切り捨てる
+            using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
-                Console.Write("i = {0} : ", i);
-                AssignSignal(i);
-                Tuple<double[], double[]> ans = RankedMagnitudeConvert();
-                magnitudes.AddRange(ans.Item1);
-                waveform.AddRange(ans.Item2);
+                using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
+                {
+                    sw.WriteLine("全データ数 : {0}", rawSign.Length);
+                    #region time-waveform to time-wavefor
+                    for (int i = 0; i < dividedNum; i++)
+                    //過剰な後方の要素は切り捨てる
+                    {
+                        sw.Write("グループ = {0} : ", i);
+                        //AssignSignal(i);
+                        Tuple<double[], double[]> ans = RankedMagnitudeConvert(i, sw); // Console 出力の継続
+                        magnitudes.AddRange(ans.Item1);
+                        waveform.AddRange(ans.Item2);
+                    }
+                    #endregion
+                }
             }
-            #endregion
 
             return Tuple.Create(magnitudes.ToArray(), waveform.ToArray());
         }

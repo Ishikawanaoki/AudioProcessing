@@ -1,7 +1,9 @@
 ﻿using function;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 
@@ -72,7 +74,33 @@ namespace BasicProcessing
         private void WaveShow_Load_1(object sender, EventArgs e) { }
         private void button1_Click(object sender, EventArgs e)
         {
-            testMathematicalWave();
+            Console.WriteLine("ボタンが押されました。");
+            //testMyAnalys(2000);
+            //DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
+            //test.Execute();
+            List<Fourier.WindowFunc> func = new List<Fourier.WindowFunc>();
+            func.Add(Fourier.WindowFunc.Blackman);
+            func.Add(Fourier.WindowFunc.Hamming);
+            func.Add(Fourier.WindowFunc.Hanning);
+            func.Add(Fourier.WindowFunc.Rectangular);
+            ActiveComplex ac;
+            double[] lData; double[] rData; string filename;
+            WaveReAndWr.DataList<double> dlist;
+            foreach (Fourier.WindowFunc fu in func)
+            {
+                ac = new ActiveComplex(lDataList, fu);
+                lData = ac.FunctionTie();
+                ac = new ActiveComplex(rDataList, fu);
+                rData = ac.FunctionTie();
+                filename = root + @"\sound_" + fu.ToString() + ".wav";
+                dlist = new WaveReAndWr.DataList<double>(
+                        new List<double>(lData),
+                        new List<double>(rData),
+                        header);
+
+                function.File.Write(filename, dlist, 5);
+            }
+            Console.WriteLine("アクションが終了しました。");
         }
         /// <summary>
         /// 現在のchar1を保存。
@@ -128,7 +156,7 @@ namespace BasicProcessing
         /// <param name="no">2つのchartを分別して、描写対象を決定できる</param>
         private void Plot(Chart str, double[] y)
         {
-            File f = new File();
+            function.File f = new function.File();
             function.Axis plot_axis = f.Plot(str, y, "Area1", "時間 [s]");
             label1.Text = "DTime : " + plot_axis.time.ToString();
             label2.Text = "DFreq : " + plot_axis.frequency.ToString();
@@ -203,7 +231,8 @@ namespace BasicProcessing
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(divnum, lDataList);
 
-            LspeAna = ex.DoSTDFT().Item2;
+            Tuple<double[], double[]> tuple = ex.DoSTDFT(root + @"\LeftSide.txt");
+            LspeAna = tuple.Item2;
             Console.WriteLine("LFの実行");
 
             // 結果のグラフ表示
@@ -214,7 +243,7 @@ namespace BasicProcessing
             Plot(chart2, LspeAna);
 
             ex = new DSP.ComplexStaff(divnum, rDataList);
-            RspeAna = ex.DoSTDFT().Item2;
+            RspeAna = ex.DoSTDFT(root + @"\RightSide.txt").Item2;
             Console.WriteLine("RFの実行");
 
             string filename = root + @"\mypractice.wav";
@@ -224,15 +253,15 @@ namespace BasicProcessing
                     new List<double>(RspeAna), 
                     header);
 
-            File.Write(filename, dlist, 5);
+            function.File.Write(filename, dlist, 5);
             Console.WriteLine("{0}を保存しました", filename);
         }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
             testMyAnalys(2000);
-            //DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
-            //test.Execute();
+            DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
+            
             Console.WriteLine("アクションが終了しました。");
         }
         #region history

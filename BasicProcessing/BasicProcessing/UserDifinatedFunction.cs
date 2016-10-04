@@ -13,6 +13,10 @@ namespace function
         {
             public static double Nearest(this IEnumerable<double> self, double target)//Nearestメソッド//
             {
+                if(target < 16)
+                {
+                    return 0.0;
+                }
                 var min = self.Min(c => Math.Abs(c - target));
                 return self.First(c => Math.Abs(c - target) == min);
             }
