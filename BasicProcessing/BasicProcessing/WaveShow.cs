@@ -98,7 +98,9 @@ namespace BasicProcessing
                         new List<double>(rData),
                         header);
 
-                function.File.Write(filename, dlist, 5);
+                WaveReAndWr.WavWriter(filename,
+                    function.File.ConvertDoubletoShort(dlist, 10));
+                Console.WriteLine("{0}が保存されました。", filename);
             }
             Console.WriteLine("アクションが終了しました。");
         }
@@ -122,17 +124,7 @@ namespace BasicProcessing
             SaveFile sf = new SaveFile(DoSaveFile);
             sf(2);
         }
-        private void button4_Click(object sender, EventArgs e)
-        {
-            string safeFileName;
-            OpenFileDialog ofp = new OpenFileDialog();
-            DialogResult dr;        // OpenfileDialog の結果を dr に格納
-            dr = ofp.ShowDialog(this);
-
-            safeFileName = ofp.SafeFileName;
-
-            safeFileName = root + "\\" + safeFileName;
-        }
+        
         private void label1_Click(object sender, EventArgs e) { }
         private void label2_Click(object sender, EventArgs e) { }
         private void label3_Click(object sender, EventArgs e) { }
@@ -253,7 +245,8 @@ namespace BasicProcessing
                     new List<double>(RspeAna), 
                     header);
 
-            function.File.Write(filename, dlist, 5);
+            //function.File.Write(filename, dlist, 5);
+            WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(dlist));
             Console.WriteLine("{0}を保存しました", filename);
         }
         private void test_button_Click(object sender, EventArgs e)
@@ -264,29 +257,19 @@ namespace BasicProcessing
             
             Console.WriteLine("アクションが終了しました。");
         }
-        #region history
-        /// <summary>
-        /// 波形生成のためのテスト
-        /// </summary>
-        private void testMathematicalWave()
+        private void button5_Click(object sender, EventArgs e)
         {
-            function.otherUser.MathematicalWave func = new function.otherUser.MathematicalWave();
-            double[] tw = func.createTriangleWave(1, 1, 1, 200);
-            double[] sw = func.createSawtoothWave(1, 1, 1, 200);
-            double[] sample = getSampleWave(1, 1, 1, 200).ToArray();
-            //Plot2(tw,getSampleWave2(),1);
-            //Plot2(sw,getSampleWave2(), 2);
-            Console.WriteLine("tw.Length  : {0}", tw.Length);
-            Console.WriteLine("sw.Length  : {0}", sw.Length);
-            Console.WriteLine("sample.Length  : {0}", sample.Length);
-            for(int i=0; i<tw.Length; i++)
-                Console.WriteLine("{0}  : {1},{2},{3}", i, tw[i], sw[i], sample[i]);
 
-        }
-        private void test()
-        {
-            function.otherUser.MathematicalWave func = new function.otherUser.MathematicalWave();
-            func.exMain();
+
+            // 短時間フーリエ変換するための格納・実行クラスの生成
+            DSP.ComplexStaff ex
+                = new DSP.ComplexStaff(2000, lDataList);
+
+            double[] heldz = ex.GetHeldz();
+            foreach (double str in heldz)
+            {
+                Console.Write("{0},", str);
+            }
         }
         private double[] getSampleWave2()
         {
@@ -295,17 +278,31 @@ namespace BasicProcessing
                 ans[i] = 0;
             return ans;
         }
-        private List<double> getSampleWave(double A,double f0, double fs, double length)
+        private List<double> getSampleWave(double A, double f0, double fs, double length)
         {
             List<double> list = new List<double>();
-            for (int i = 0; i < length; i++)
-                // for (int n = 0; n < (length * fs); n++)
+            //for (int i = 0; i < length; i++)
+            for (int n = 0; n < (length * fs); n++)
+            {
                 list.Add(
-                    Math.Sin(2 * Math.PI * f0 * i / length)
-                    // Math.Sin(m * 2 * Math.PI * f0 * n / fs);
+                    //A * Math.Sin(2 * Math.PI * f0 * i / length)
+                    A * Math.Sin(2 * Math.PI * f0 * n / fs)
                     );
+            }
             return list;
         }
-        #endregion
+        private void button4_Click(object sender, EventArgs e)
+        {
+            List<double> wave = getSampleWave(lDataList.Max(), 1000, 44100, 200);
+
+            Plot(chart1, wave.ToArray());
+            Console.WriteLine("Process End");
+
+            string filename = root + @"\newwave.wav";
+
+            //function.File.Write(filename, dlist, 5);
+            WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(new WaveReAndWr.DataList<double>(wave, wave, header)));
+            Console.WriteLine("{0}を保存しました", filename);
+        }
     }
 }

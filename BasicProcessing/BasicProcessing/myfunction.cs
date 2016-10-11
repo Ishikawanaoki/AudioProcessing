@@ -237,10 +237,12 @@ namespace function
                 List<double> ans = new List<double>();
                 foreach(int item2 in item)
                 {
-                    if (item2 < _length/2){ ans.Add(item2 * axis_fru); }
-                    else{ ans.Add(item2 * axis_fru * (-1)); }
+                    double tmp = item2;
+                    if (item2 < _length/2){ tmp *= axis_fru; }
+                    else{ tmp *= axis_fru * (-1); }
+                    ans.Add(tmp);
                 }
-                heldz.Add(ans);
+                heldz.Add(new List<double>(function.otherUser.Music.effecientMusicalScale(ans.ToArray())));
             }
             return heldz;
         }
@@ -905,6 +907,52 @@ namespace function
             // フィールド変数から、ヘッダーを参照しています。
             WaveReAndWr.DataList<short> datalist = new WaveReAndWr.DataList<short>(Ldata, Rdata, dlist.WavHeader);
             WaveReAndWr.WavWriter(filename, datalist);
+        }
+        public static WaveReAndWr.DataList<short> ConvertDoubletoShort(WaveReAndWr.DataList<double> dlist)
+        {
+            List<short> Ldata = new List<short>();
+            List<short> Rdata = new List<short>();
+
+            foreach (double str in dlist.lDataList) Ldata.Add((short)str);
+
+            foreach (double str in dlist.rDataList) Ldata.Add((short)str);
+
+            return new WaveReAndWr.DataList<short>(
+                Ldata,
+                Rdata,
+                dlist.WavHeader
+                );
+        }
+        public static WaveReAndWr.DataList<short> ConvertDoubletoShort
+            (WaveReAndWr.DataList<double> dlist, int times)
+        {
+            int length =
+                dlist.lDataList.Count > dlist.rDataList.Count
+                ? dlist.rDataList.Count
+                : dlist.lDataList.Count;
+            length *= times;
+                      
+            List<short> Ldata = new List<short>();
+            List<short> Rdata = new List<short>();
+
+            short ltmp=0, rtmp=0;
+            int count = 0;
+
+            for(int i=0; i<length; i++)
+            {
+                if(i % times == 0)
+                {
+                    ltmp = (short)dlist.lDataList[count];
+                    rtmp = (short)dlist.rDataList[count++];
+                }
+
+                Ldata.Add(ltmp); Rdata.Add(rtmp);
+            }
+            return new WaveReAndWr.DataList<short>(
+                Ldata,
+                Rdata,
+                dlist.WavHeader
+                );
         }
     }
 }
