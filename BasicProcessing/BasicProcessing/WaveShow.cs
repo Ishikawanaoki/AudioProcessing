@@ -274,9 +274,11 @@ namespace BasicProcessing
                     {
                         foreach(double data in str)
                         {
-                            sw.WriteLine(data);
-                            Console.Write("{0},", str);
+                            sw.Write(data + ",");
+                            Console.Write("{0},", data);
                         }
+                        sw.WriteLine("");
+                        Console.WriteLine("");
                         
                     }
                 }
