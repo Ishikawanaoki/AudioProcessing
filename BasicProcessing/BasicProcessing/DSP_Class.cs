@@ -280,7 +280,7 @@ namespace DSP
                 foreach(double item2 in item1)
                 {
                 if (sw != null){
-                    sw.Write("{0},", item1[0]);// 最大の周波数を返す
+                    //sw.Write("{0},", item1[0]);// 最大の周波数を返す
                 }
                 heldz.Add(item2);
                 }

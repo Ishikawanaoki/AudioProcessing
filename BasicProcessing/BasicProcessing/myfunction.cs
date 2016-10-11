@@ -183,15 +183,28 @@ namespace function
         {
             List<double>            ans      = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
             List<List<int>>   ansIndex       = new List<List<int>>(); // List.Count=rank. LinkedList.Count<=2
-            IEnumerable<double>     str      = GetMagnitude();
+            double[]     str      = GetMagnitude().ToArray();
 
+
+            double test = -1.0;
             #region 配列ansの決定
             for (int i=0; i<rank; i++)
             {
                 double[] Imax = new double[1];  //要素数1の配列を用意
                 Imax[0] = str.Max();            //最大値
-                ans.AddRange(Imax);             //最大の振幅スペクトルを格納
-                str.Except(Imax);               //最大の振幅スペクトルを除外
+                if (test != Imax[0])
+                {
+                    test = Imax[0];
+                    ans.AddRange(Imax);             //最大の振幅スペクトルを格納
+                    //str.Except(Imax);               //最大の振幅スペクトルを除外
+                    for(int j=0; j<str.Count(); j++)
+                    {
+                        if(str[j] >= test)
+                        {
+                            str[j] = 0;
+                        }
+                    }
+                }
             }
             #endregion
 
