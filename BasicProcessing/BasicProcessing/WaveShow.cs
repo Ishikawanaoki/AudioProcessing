@@ -272,14 +272,18 @@ namespace BasicProcessing
                 {
                     foreach (double[] str in heldz)
                     {
-                        foreach(double data in str)
+                        #region changed 201610111559
+                        foreach (double data in str)
                         {
-                            sw.Write(data + ",");
+                            //sw.Write(data + ",");
+                            sw.WriteLine(data + ",");
+
                             Console.Write("{0},", data);
                         }
                         sw.WriteLine("");
-                        Console.WriteLine("");
-                        
+                        //Console.WriteLine("");
+                        #endregion
+
                     }
                 }
             }
