@@ -272,6 +272,7 @@ namespace BasicProcessing
                 {
                     foreach (double str in heldz)
                     {
+                        sw.WriteLine(str);
                         Console.Write("{0},", str);
                     }
                 }
