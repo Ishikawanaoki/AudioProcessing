@@ -825,11 +825,9 @@ namespace function
         /// <returns></returns>
         public static double[] includeFile(string fileName)
         {
-            double amin, amax;
-
-            //signal
+            //input Signal
             List<double> y = new List<double>();
-
+            #region read data from file
             using (System.IO.StreamReader koeFile = new System.IO.StreamReader(fileName))
             {
                 while (koeFile.Peek() != -1)
@@ -837,13 +835,17 @@ namespace function
                     y.Add(Convert.ToDouble(koeFile.ReadLine()));
                 }
             }
-            amax = y.Max();
-            amin = y.Min();
+            #endregion
+
+            #region 正規化
+            double amax = y.Max(); double amin = y.Min();
             if (amin < 0) amax += amin * (-1);
             for (int i = 0; i < y.Count; i++)
             {
                 y[i] = y[i] / amax * 100;
             }
+            #endregion
+
             return y.ToArray();
         }
         public Axis Plot(Chart str, double[] y, string area, string title)

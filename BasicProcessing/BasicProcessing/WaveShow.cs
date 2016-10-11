@@ -214,7 +214,7 @@ namespace BasicProcessing
         /// 
         /// </summary>
         /// <param name="divnum">波形の等分する分割数</param>
-        private void testMyAnalys(int divnum)
+        private void testMyAnalys(int divnum, int rank)
         {
             double[] RspeAna;
             double[] LspeAna;
@@ -223,7 +223,7 @@ namespace BasicProcessing
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(divnum, lDataList);
 
-            Tuple<double[], double[]> tuple = ex.DoSTDFT(root + @"\LeftSide.txt");
+            Tuple<double[], double[]> tuple = ex.DoSTDFT(rank, root + @"\LeftSide.txt");
             LspeAna = tuple.Item2;
             Console.WriteLine("LFの実行");
 
@@ -235,7 +235,7 @@ namespace BasicProcessing
             Plot(chart2, LspeAna);
 
             ex = new DSP.ComplexStaff(divnum, rDataList);
-            RspeAna = ex.DoSTDFT(root + @"\RightSide.txt").Item2;
+            RspeAna = ex.DoSTDFT(rank, root + @"\RightSide.txt").Item2;
             Console.WriteLine("RFの実行");
 
             string filename = root + @"\mypractice.wav";
@@ -252,7 +252,7 @@ namespace BasicProcessing
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            testMyAnalys(2000);
+            testMyAnalys(5, 2000);
             DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
             
             Console.WriteLine("アクションが終了しました。");
@@ -265,15 +265,19 @@ namespace BasicProcessing
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(2000, lDataList);
 
-            double[] heldz = ex.GetHeldz();
+            double[][] heldz = ex.GetHeldz(10);
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                 {
-                    foreach (double str in heldz)
+                    foreach (double[] str in heldz)
                     {
-                        sw.WriteLine(str);
-                        Console.Write("{0},", str);
+                        foreach(double data in str)
+                        {
+                            sw.WriteLine(data);
+                            Console.Write("{0},", str);
+                        }
+                        
                     }
                 }
             }

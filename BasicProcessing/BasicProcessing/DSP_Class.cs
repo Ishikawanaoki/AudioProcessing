@@ -256,7 +256,7 @@ namespace DSP
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
             return shortSign; 
         }
-        private Tuple<double[],double[],List<double>> RankedMagnitudeConvert(int groupIndex, StreamWriter sw)
+        private Tuple<double[],double[],List<double>> RankedMagnitudeConvert(int rank, int groupIndex, StreamWriter sw)
         {
             // 必ずこのメソッドより先に、配列への割り当てメソッド AssignSignalを呼ぶ
             // ActiveComplex は複素数の配列を内部に保持し、
@@ -264,8 +264,8 @@ namespace DSP
             // 複素数の配列を変化させ
             // また、実行結果となる有効なオブジェクトを返す。
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Blackman);
-            int rank //= 5;
-                = 1;
+            //int rank //= 5;
+            //    = 1;
             // 内部への変化 あり
             ac.FTransform(Fourier.ComplexFunc.FFT);
 
@@ -301,24 +301,29 @@ namespace DSP
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public double[] GetHeldz()
+        public double[][] GetHeldz(int rank)
         {
-            List<double> sample = new List<double>();
+            List<double[]> ans = new List<double[]>();
             
-                    //sw.WriteLine("全データ数 : {0}", rawSign.Length);
-                    #region time-waveform to time-wavefor
-                    for (int i = 0; i < dividedNum; i++)
-                    //過剰な後方の要素は切り捨てる
-                    {
-                        //sw.Write("グループ = {0} : ", i);
-                        //AssignSignal(i);
-                        double heldz = RankedMagnitudeConvert(i, null).Item3[0];
-                        sample.Add(heldz);
-                    }
-                    #endregion
-            return sample.ToArray();
+
+            //sw.WriteLine("全データ数 : {0}", rawSign.Length);
+            #region time-waveform to time-wavefor
+            for (int i = 0; i < dividedNum; i++)
+            //過剰な後方の要素は切り捨てる
+            {
+                //sw.Write("グループ = {0} : ", i);
+                //AssignSignal(i);
+                List<double> tmp = new List<double>();
+                foreach (double item in RankedMagnitudeConvert(rank, i, null).Item3)
+                {
+                    tmp.Add(item);
+                }
+                ans.Add(tmp.ToArray());
+            }
+            #endregion
+            return ans.ToArray();
         }
-        public Tuple<double[], double[]> DoSTDFT(string filename)
+        public Tuple<double[], double[]> DoSTDFT(int rank, string filename)
         {
             List<double> magnitudes = new List<double>();
             List<double> waveform = new List<double>();
@@ -334,7 +339,7 @@ namespace DSP
                     {
                         //sw.Write("グループ = {0} : ", i);
                         //AssignSignal(i);
-                        Tuple<double[], double[], List<double>> ans = RankedMagnitudeConvert(i, sw); // Console 出力の継続
+                        Tuple<double[], double[], List<double>> ans = RankedMagnitudeConvert(rank, i, sw); // Console 出力の継続
                         magnitudes.AddRange(ans.Item1);
                         waveform.AddRange(ans.Item2);
                     }
