@@ -259,17 +259,24 @@ namespace BasicProcessing
         }
         private void button5_Click(object sender, EventArgs e)
         {
-
+            string filename = root + @"\targetarray.txt";
 
             // 短時間フーリエ変換するための格納・実行クラスの生成
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(2000, lDataList);
 
             double[] heldz = ex.GetHeldz();
-            foreach (double str in heldz)
+            using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
-                Console.Write("{0},", str);
+                using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
+                {
+                    foreach (double str in heldz)
+                    {
+                        Console.Write("{0},", str);
+                    }
+                }
             }
+            Console.WriteLine("配列を保存しました。");
         }
         private double[] getSampleWave2()
         {
