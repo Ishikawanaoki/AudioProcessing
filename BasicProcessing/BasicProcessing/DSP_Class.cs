@@ -11,6 +11,96 @@ namespace DSP
     {
         public static class effector
         {
+            /// <summary>
+            /// Autocorrelation function
+            /// </summary>
+            public static double[] ACF(int divided, double[] x)
+            {
+                double[] ans = new double[x.Length];
+                int winLength = x.Length / divided;
+                // tau mean time renge
+                foreach (int tau in Enumerable.Range(1, winLength - 1))
+                {
+                    foreach(int j in Enumerable.Range(0, x.Length))
+                    {
+                        if (j + tau < x.Length)
+                        {
+                            ans[tau] += x[j] * x[j + tau];
+                        }
+                        else
+                        {
+                            ans[tau] += 0.0;
+                        }
+                    }
+                }
+                return ans;
+            }
+            /// <summary>
+            /// Autocorrelation function
+            /// </summary>
+            public static double[] M_ACF(int divided, double[] x)
+            {
+                double[] ans = new double[x.Length];
+                int winLength = x.Length / divided;
+                // tau mean time renge
+                foreach (int tau in Enumerable.Range(1, winLength - 1))
+                {
+                    int cursol = 0;
+                    while (cursol + tau < x.Length)
+                    {
+                        ans[tau] += x[cursol] * x[cursol + tau];
+                        if (++cursol > x.Length) break;
+                    }
+                }
+                return ans;
+            }
+            public static double[] M_M(int divided, double[] x)
+            {
+                double[] ans = new double[x.Length];
+                int winLength = x.Length / divided;
+                // tau mean time renge
+                foreach (int tau in Enumerable.Range(1, winLength - 1))
+                {
+                    foreach (int j in Enumerable.Range(0, x.Length))
+                    {
+                        if (j + tau < x.Length)
+                        {
+                            ans[tau] += Math.Pow(x[j],2) + Math.Pow(x[j + tau],2);
+                        }
+                        else
+                        {
+                            ans[tau] += 0.0;
+                        }
+                    }
+                }
+                return ans;
+            }
+            public static double[] M_NSDF(int divided, double[] x)
+            {
+                double[] ans = new double[x.Length];
+                int winLength = x.Length / divided;
+                // tau mean time renge
+                double[] ACF = M_ACF(divided, x);double[] M = M_M(divided, x);
+
+                foreach (int tau in Enumerable.Range(1, winLength - 1))
+                {
+                    ans[tau] = M[tau] - 2 * ACF[tau];
+                }
+                return ans;
+            }
+            internal static double[] M_SDF(int divided, double[] x)
+            {
+                double[] ans = new double[x.Length];
+                int winLength = x.Length / divided;
+                // tau mean time renge
+                double[] ACF = M_ACF(divided, x); double[] M = M_M(divided, x);
+
+                foreach (int tau in Enumerable.Range(1, winLength - 1))
+                {
+                    ans[tau] = 2 * ACF[tau] / M[tau];
+                }
+                return ans;
+            }
             private static IEnumerable<int> IndexOfChangepoint(double[] timeSample)
             {
                 for (int i = 0; i < timeSample.Length; i++)

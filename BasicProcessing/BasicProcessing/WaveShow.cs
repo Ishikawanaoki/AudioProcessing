@@ -322,5 +322,21 @@ namespace BasicProcessing
             WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(new WaveReAndWr.DataList<double>(wave, wave, header)));
             Console.WriteLine("{0}を保存しました", filename);
         }
+
+        
+        private void ACF_button_Click(object sender, EventArgs e)
+        {
+            Plot(chart2, DSP.TimeDomain.effector.M_ACF(100, lDataList));
+        }
+
+        private void SDF_button_Click(object sender, EventArgs e)
+        {
+            Plot(chart2, DSP.TimeDomain.effector.M_SDF(100, lDataList));
+        }
+
+        private void NSDF_button_Click(object sender, EventArgs e)
+        {
+            Plot(chart2, DSP.TimeDomain.effector.M_NSDF(100, lDataList));
+        }
     }
 }
