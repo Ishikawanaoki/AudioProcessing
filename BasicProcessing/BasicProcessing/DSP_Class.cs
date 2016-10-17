@@ -11,6 +11,17 @@ namespace DSP
     {
         public static class effector
         {
+            public static IEnumerable<double> classedWaveForm(double[] x)
+            {
+                double unsafeValue = 0.10f;
+                bool flag = true;
+                foreach (var target in x) {
+                    if (target < unsafeValue && flag) break;
+                    else if (target < unsafeValue) flag = false;
+                    else flag = true;
+                    yield return target;
+                }
+            }
             /// <summary>
             /// Autocorrelation function
             /// </summary>
@@ -53,6 +64,32 @@ namespace DSP
                     }
                 }
                 return ans;
+            }
+            public static IEnumerable<double> Enum_M_ACF(int divided, double[] x)
+            {
+                double[] ans = new double[x.Length];
+                int winLength = x.Length / divided;
+                // tau mean time renge
+                foreach (int tau in Enumerable.Range(1, winLength - 1))
+                {
+                    int cursol = 0;
+                    while (cursol + tau < x.Length)
+                    {
+                        ans[tau] += x[cursol] * x[cursol + tau];
+                        if (++cursol > x.Length) break;
+                    }
+                }
+                int num = divided;
+                var cursor = from start in Enumerable.Range(0, num) select winLength * start;
+                var query = from inner in Enumerable.Range(1, x.Length)
+                            from outer in Enumerable.Range(1, x.Length)
+                            select (inner * outer);
+                return Enumerable.Range(0, x.Length).
+                    Select(c =>
+                    {
+                        return x[c];
+                    });
+
             }
             public static double[] M_M(int divided, double[] x)
             {

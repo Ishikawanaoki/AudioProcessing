@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicProcessing", "BasicProcessing\BasicProcessing.csproj", "{EAF6B1AA-8B0A-4791-BDB4-9BAE391A1B1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveEditer", "WaveEditer\WaveEditer.csproj", "{D055A8F7-4855-4A09-908D-2D0774C104AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{EAF6B1AA-8B0A-4791-BDB4-9BAE391A1B1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAF6B1AA-8B0A-4791-BDB4-9BAE391A1B1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAF6B1AA-8B0A-4791-BDB4-9BAE391A1B1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D055A8F7-4855-4A09-908D-2D0774C104AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D055A8F7-4855-4A09-908D-2D0774C104AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D055A8F7-4855-4A09-908D-2D0774C104AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D055A8F7-4855-4A09-908D-2D0774C104AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

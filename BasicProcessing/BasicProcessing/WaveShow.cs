@@ -265,7 +265,7 @@ namespace BasicProcessing
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(2000, lDataList);
 
-            double[][] heldz = ex.GetHeldz(10);
+            double[][] heldz = ex.GetHeldz(1);
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
@@ -326,17 +326,23 @@ namespace BasicProcessing
         
         private void ACF_button_Click(object sender, EventArgs e)
         {
-            Plot(chart2, DSP.TimeDomain.effector.M_ACF(100, lDataList));
+            Plot(chart2, 
+                DSP.TimeDomain.effector.classedWaveForm(
+                    DSP.TimeDomain.effector.M_ACF(100, lDataList)).ToArray());
         }
 
         private void SDF_button_Click(object sender, EventArgs e)
         {
-            Plot(chart2, DSP.TimeDomain.effector.M_SDF(100, lDataList));
+            Plot(chart2,
+                DSP.TimeDomain.effector.classedWaveForm(
+                    DSP.TimeDomain.effector.M_SDF(100, lDataList)).ToArray());
         }
 
         private void NSDF_button_Click(object sender, EventArgs e)
         {
-            Plot(chart2, DSP.TimeDomain.effector.M_NSDF(100, lDataList));
+            Plot(chart2,
+                DSP.TimeDomain.effector.classedWaveForm(
+                    DSP.TimeDomain.effector.M_NSDF(100, lDataList)).ToArray());
         }
     }
 }
