@@ -19,6 +19,7 @@ namespace BasicProcessing
         public WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
         public readonly int[] rank;
+        public const int divnum = 2000;
         /// <summary>
         /// 引数なしのコンストラクタは無効
         /// （フィールドは空）
@@ -218,7 +219,7 @@ namespace BasicProcessing
         /// 
         /// </summary>
         /// <param name="divnum">波形の等分する分割数</param>
-        private void testMyAnalys(int divnum, int[] rank)
+        private void testMyAnalys()
         {
             double[] RspeAna;
             double[] LspeAna;
@@ -256,7 +257,7 @@ namespace BasicProcessing
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            testMyAnalys(5, rank);
+            testMyAnalys();
             DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
             
             Console.WriteLine("アクションが終了しました。");
