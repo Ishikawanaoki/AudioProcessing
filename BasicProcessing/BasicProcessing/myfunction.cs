@@ -189,7 +189,7 @@ namespace function
             double max = double.MaxValue;
             foreach(var tmp in rank.OrderByDescending(t => t))
             {
-                while (countup++ < tmp)
+                while (countup++ <= tmp)
                 {
                     max = GetMagnitude().Where(c => c < max).Max();
                 }
@@ -212,7 +212,7 @@ namespace function
                         else return -1;               // 該当なし
                     })
                     .Where(c => c > 0)                // 該当なしを弾く 
-                    .First();                         // 最初の対象を
+                    .FirstOrDefault();                         // 最初の対象を
                                                       // シーケンスで返す
             }
         }
