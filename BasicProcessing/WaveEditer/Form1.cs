@@ -26,13 +26,9 @@ namespace WaveEditer
 
         private void start_button_Click(object sender, EventArgs e)
         {
-            int A = 10;
-            EnumCount++;
-            //str = str.Concat(Wave.SawtoothWave(A, 1));
-            str = str.Concat(Wave.TriangleWave(A, 1));
+            
 
             vw.Plot(chart1,str, "hoge", "hoge");
-            label1.Text = EnumCount.ToString();
         }
 
         private void chart1_Click(object sender, EventArgs e)
@@ -43,6 +39,15 @@ namespace WaveEditer
         private void Encode_button_Click(object sender, EventArgs e)
         {
             WaveReAndWr.DefWavWriter("mytest.wav",str);
+        }
+
+        private void CountUp_button_Click(object sender, EventArgs e)
+        {
+            int A = 10;
+            EnumCount++;
+            //str = str.Concat(Wave.SawtoothWave(A, 1));
+            str = str.Concat(Wave.TriangleWave(A, 1));
+            label1.Text = EnumCount.ToString();
         }
     }
     public class Viewer

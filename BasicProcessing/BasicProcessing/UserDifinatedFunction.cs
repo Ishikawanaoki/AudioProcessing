@@ -36,6 +36,10 @@ namespace function
                 7902.13, 8372.02, 8869.84, 9397.27, 9956.06, 10548.08, 11175.3, 11839.82, 12543.85, 13289.75, 14080,
                 14917, 15804, 16274, 16744
                 };
+            public static double OneMusicalScale(double target)
+            {
+                return list.Nearest(target);
+            }
             public static double[] effecientMusicalScale(double[] sign)
             {
                 List<double> ans = new List<double>();

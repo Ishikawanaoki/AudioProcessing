@@ -129,7 +129,7 @@ namespace function
     public class ActiveComplex
     {
         private List<Complex> complex;
-        private int _length;
+        //private int _length;
         /// <summary>
         /// double配列から呼び出される。
         /// double[] => Complex[]にするためには、必ず内部でAdd()が呼び出される
@@ -149,12 +149,19 @@ namespace function
             complex = new List<Complex>();
             Add(Fourier.Windowing(items, wfunc));
         }
+        public ActiveComplex(Complex[] items)
+        {
+            complex = items.ToList();
+        }
         private void Add(double[] items)
         {
             foreach (double item in items)
                 complex.Add(new Complex(item, 0));
-            // Constructor must call this method
-            _length = complex.Count;
+        }
+        public IEnumerable<Complex> GetEnumerable()
+        {
+            foreach (var str in complex)
+                yield return str;
         }
         /// <summary>
         /// 振幅スペクトル列を返す
@@ -171,93 +178,97 @@ namespace function
                 yield return item.real;
         }
         /// <summary>
-        /// 1つの切り取り時間において、振幅スペクトルをランク付けする
+        /// return IEnumerable contains a num of rank lines
+        /// 入力されたランクと、等しい個数の最大値を求めるシーケンスを返す。
         /// </summary>
-        /// <param name="rank">上位第rank位までのスペクトルを採用する</param>
-        /// <returns>タップルには 
-        /// item1 : ans : 
-        /// item2 : 
-        /// が取り出せるようにしている。
-        /// </returns>
-        public Tuple<double[], List<List<int>>> Ranked(int rank)
+        /// <param name="rank">順位を意味するint配列</param>
+        /// <returns></returns>
+        public IEnumerable<double> GetRanked_Muximums(int[] rank)
         {
-            List<double>            ans      = new List<double>(); // スペクトルの大きさを上位rankまでrank個だけ格納
-            List<List<int>>   ansIndex       = new List<List<int>>(); // List.Count=rank. LinkedList.Count<=2
-            double[]     str      = GetMagnitude().ToArray();
-
-
-            double test = -1.0;
-            #region 配列ansの決定
-            for (int i=0; i<rank; i++)
+            int countup = 1;
+            double max = double.MaxValue;
+            foreach(var tmp in rank.OrderByDescending(t => t))
             {
-                double[] Imax = new double[1];  //要素数1の配列を用意
-                Imax[0] = str.Max();            //最大値
-                if (test != Imax[0])
+                while (countup++ < tmp)
                 {
-                    test = Imax[0];
-                    ans.AddRange(Imax);             //最大の振幅スペクトルを格納
-                    //str.Except(Imax);               //最大の振幅スペクトルを除外
-                    for(int j=0; j<str.Count(); j++)
-                    {
-                        if(str[j] >= test)
-                        {
-                            str[j] = 0;
-                        }
-                    }
+                    max = GetMagnitude().Where(c => c < max).Max();
                 }
+                yield return max;
             }
-            #endregion
-
-            double[] str2 = GetMagnitude().ToArray();
-            for(int ii=0; ii<str2.Length; ii++)
-            {
-                List<int> tmp = new List<int>();
-                foreach(double RankedValue in ans)
-                {
-                    if (str2[ii] == RankedValue)
-                        tmp.Add(ii); // 周波数軸上の位置に該当する、スペクトル位置を格納
-                }
-                ansIndex.Add(tmp);       // 短時間単位に、複数の周波数軸データを格納
-            }
-            return Tuple.Create(ans.ToArray(), ansIndex);
         }
         /// <summary>
-        /// complexObj : 上位rank位までのスペクトルの大きさ、その位置
+        /// 一つの時間窓での任意の順位に対する、インデックスを先頭から検索
         /// </summary>
         /// <param name="rank"></param>
         /// <returns></returns>
-        public IEnumerable<double> RankedMagnitude(int rank)
+        public IEnumerable<int> GetRanked_Index(int[] rank)
         {
-            Tuple<double[], List<List<int>>> complexObj = Ranked(rank);
-            double maxThrethold = complexObj.Item1[complexObj.Item1.Length - 1];
-            foreach (double magnitude in GetMagnitude())
+            foreach(var str in GetRanked_Muximums(rank))
             {
-                if (magnitude >= maxThrethold)
-                    yield return magnitude;
+                yield return GetMagnitude()
+                    .Select((val, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
+                    {
+                        if (val == str) return index; // 任意順位 str に該当
+                        else return -1;               // 該当なし
+                    })
+                    .Where(c => c > 0)                // 該当なしを弾く 
+                    .First();                         // 最初の対象を
+                                                      // シーケンスで返す
             }
         }
-        public List<List<double>> ReturnHeldz(int rank)
+        public IEnumerable<Complex> RankedComplex(int[] rank)
         {
-            Tuple<double[], List<List<int>>> complexObj = Ranked(rank);
-            List<List<double>> heldz = new List<List<double>>();
-
-            Axis axis = new Axis(_length, 44100);
-            double axis_fru = axis.get_div()[1];
-
-
-            foreach (List<int> item in complexObj.Item2)
+            return GetEnumerable().Select((name, index) => 
             {
-                List<double> ans = new List<double>();
-                foreach(int item2 in item)
+                bool flag = false;
+                foreach(var str in GetRanked_Index(rank))
                 {
-                    double tmp = item2;
-                    if (item2 < _length/2){ tmp *= axis_fru; }
-                    else{ tmp *= axis_fru * (-1); }
-                    ans.Add(tmp);
+                    if (index == str)
+                    {
+                        flag = true;
+                        break;
+                    }
                 }
-                heldz.Add(new List<double>(function.otherUser.Music.effecientMusicalScale(ans.ToArray())));
+                if (flag) return name;
+                else return new Complex(0,0);
+            });
+        }
+        /// <summary>
+        /// 配列rankに対する周波数のみを透過させるフィルタ
+        /// </summary>
+        /// <param name="rank"></param>
+        /// <returns></returns>
+        public IEnumerable<double> RankedMagnitude(int[] rank)
+        {
+            IEnumerable<double> tmp;
+            IEnumerable<double> ans = Enumerable.Range(0, complex.Count).Select(c => 1.0); // 全て1
+
+            foreach (var str in GetRanked_Muximums(rank))
+            {
+                tmp = GetMagnitude()
+                    .Select((num, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
+                    {
+                        if (num == str) return num; // 透過
+                        else return 0.0;              // 遮断
+                    });
+                ans = ans.SelectMany((t) => tmp,(t, a) => t * a);
             }
-            return heldz;
+            return ans;
+        }
+        public IEnumerable<double> GetHeldz(int[] rank)
+        {
+            double length = this.complex.Count; // 時間窓の大きさ
+            Axis axis = new Axis(length, 44100); // 軸計算
+
+            double axis_fru = axis.frequency; // グラフ : 周波数-振幅スペクトルでの周波数の一目盛り
+
+            foreach (var item in GetRanked_Index(rank))
+            {
+                double tmp = item;
+                if (item < length/2){ tmp *= axis_fru; }
+                else{ tmp *= axis_fru * (-1); }
+                yield return function.otherUser.Music.OneMusicalScale(item);
+            }
         }
 
         /// <summary>

@@ -9,9 +9,45 @@ namespace DSP
 {
     namespace TimeDomain
     {
+        public static class Filter
+        {
+            const int samplerate = 44100;
+            public static IEnumerable<double> HighPass(double[] str, float fs)
+            {
+                float q = (float)Math.Sqrt(0.5);
+                float omega = 2.0f * (float)Math.PI * fs / samplerate;
+                float alpha = (float)Math.Sin(omega) / (2.0f * q);
+
+                float a0 = 1.0f + alpha;
+                float a1 = -2.0f * (float)Math.Cos(omega);
+                float a2 = 1.0f - alpha;
+                float b0 = (1.0f + (float)Math.Cos(omega)) / 2.0f;
+                float b1 = -(1.0f + (float)Math.Cos(omega));
+                float b2 = (1.0f + (float)Math.Cos(omega)) / 2.0f;
+
+                float in1 = 0, in2 = 0, out1 = 0, out2 = 0;
+                var tmp = effector.GetEnumerableWave(str);
+                var tmp2 =  Enumerable.Range(0, tmp.Count()).Select(i =>{
+                    in1 = (float)tmp.ElementAtOrDefault(i - 2);
+                    in2 = (float)tmp.ElementAtOrDefault(i - 1);
+                    return b0 / a0 * tmp.ElementAtOrDefault(i) + b1 / a0 * in1 + b2 / a0 * in2;
+                });
+
+                return Enumerable.Range(0, tmp.Count()).Select(i => {
+                    out1 = (float)tmp2.ElementAtOrDefault(i + 2);
+                    out2 = (float)tmp2.ElementAtOrDefault(i + 1);
+                    return tmp2.ElementAtOrDefault(i) - a1 / a0 * out1 - a2 / a0 * out2;
+                });
+                }
+        }
         public static class effector
         {
-            public static IEnumerable<double> classedWaveForm(double[] x)
+            public static IEnumerable<double> GetEnumerableWave(double[] x)
+            {
+                foreach (var str in x)
+                    yield return str;
+            }
+            public static IEnumerable<double> classedWaveForm(IEnumerable<double> x)
             {
                 double unsafeValue = 0.10f;
                 bool flag = true;
@@ -22,10 +58,11 @@ namespace DSP
                     yield return target;
                 }
             }
+
             /// <summary>
             /// Autocorrelation function
             /// </summary>
-            public static double[] ACF(int divided, double[] x)
+            public static IEnumerable<double> ACF(int divided, double[] x)
             {
                 double[] ans = new double[x.Length];
                 int winLength = x.Length / divided;
@@ -361,7 +398,6 @@ namespace DSP
         private int dividedNum;     // 分割数
         private double[] rawSign;   // 変換前の波形データ（全体）
         private int shortLength;    // 短時間に対応するデータ数
-        //private double[] shortSign; // 任意の単位時間内の波形データ
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
             this.dividedNum = dividedNum;
@@ -369,8 +405,6 @@ namespace DSP
 
             if (dividedNum > 0)
                 shortLength = rawSign.Length / dividedNum;
-            //shortSign = new double[shortLength];
-            //長さが shortLength を超える場合は起こり得ない
         }
         /// <summary>
         /// shortLength個のデータを、配列shortSignへ割り当てる。
@@ -383,43 +417,25 @@ namespace DSP
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
             return shortSign; 
         }
-        private Tuple<double[],double[],List<double>> RankedMagnitudeConvert(int rank, int groupIndex, StreamWriter sw)
+        private double[] ShortTimeRankedHeldz(int[] rank, int groupIndex)
         {
-            // 必ずこのメソッドより先に、配列への割り当てメソッド AssignSignalを呼ぶ
-            // ActiveComplex は複素数の配列を内部に保持し、
-            // メソッド呼出しに対して、
-            // 複素数の配列を変化させ
-            // また、実行結果となる有効なオブジェクトを返す。
-            ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Blackman);
-            //int rank //= 5;
-            //    = 1;
-            // 内部への変化 あり
+            ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
             ac.FTransform(Fourier.ComplexFunc.FFT);
 
-            // 第一返り値 magnitude : 任意短時間における上位第5位のスペクトルの大きさ
-            // 内部への変化 なし
-            double[] magnitude = ac.RankedMagnitude(rank).ToArray();
+            return ac.GetHeldz(rank).ToArray();
+        }
+        private double[] ShortTimeRankedMagnitude(int[] rank, int groupIndex)
+        {
+            ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
+            ac.FTransform(Fourier.ComplexFunc.FFT);
 
-            List<double> heldz = new List<double>();
-            //sw.WriteLine("timelength : {0}", ac.Getlength());
-            foreach (List<double> item1 in ac.ReturnHeldz(rank))
-            {
-                foreach(double item2 in item1)
-                {
-                if (sw != null){
-                    //sw.Write("{0},", item1[0]);// 最大の周波数を返す
-                }
-                heldz.Add(item2);
-                }
-            }
-
-            // 第二返り値 waveform :  
-            List<double> waveform = new List<double>();
-            foreach(Complex cmp in ac.FTransform(Fourier.ComplexFunc.IFFT))
-            {
-                waveform.Add(cmp.real);
-            }
-            return Tuple.Create(magnitude, waveform.ToArray(), heldz);
+            return ac.RankedMagnitude(rank).ToArray();
+        }
+        private double[] InverseSTDFT(double[] mdata)
+        {
+            ActiveComplex ac = new ActiveComplex(mdata);
+            ac.FTransform(Fourier.ComplexFunc.IFFT);
+            return ac.GetReality().ToArray();
         }
         /// <summary>
         /// 2016/10/04 拡張
@@ -428,53 +444,38 @@ namespace DSP
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public double[][] GetHeldz(int rank)
+        public double[][] GetHeldz(int[] rank)
         {
-            List<double[]> ans = new List<double[]>();
+            List<double[]> heldz = new List<double[]>();
             
-
-            //sw.WriteLine("全データ数 : {0}", rawSign.Length);
-            #region time-waveform to time-wavefor
-            for (int i = 0; i < dividedNum; i++)
-            //過剰な後方の要素は切り捨てる
+            for (int timeWindow = 0; timeWindow < dividedNum; timeWindow++)
             {
-                //sw.Write("グループ = {0} : ", i);
-                //AssignSignal(i);
-                List<double> tmp = new List<double>();
-                foreach (double item in RankedMagnitudeConvert(rank, i, null).Item3)
-                {
-                    tmp.Add(item);
-                }
-                ans.Add(tmp.ToArray());
+                heldz.Add(ShortTimeRankedHeldz(rank, timeWindow));
             }
-            #endregion
-            return ans.ToArray();
+            return heldz.ToArray();
         }
-        public Tuple<double[], double[]> DoSTDFT(int rank, string filename)
+        public double[] DoSTDFT(int[] rank)
         {
-            List<double> magnitudes = new List<double>();
             List<double> waveform = new List<double>();
 
-            using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
+            for (int timeWindow = 0; timeWindow < dividedNum; timeWindow++)
             {
-                using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
-                {
-                    //sw.WriteLine("全データ数 : {0}", rawSign.Length);
-                    #region time-waveform to time-wavefor
-                    for (int i = 0; i < dividedNum; i++)
-                    //過剰な後方の要素は切り捨てる
-                    {
-                        //sw.Write("グループ = {0} : ", i);
-                        //AssignSignal(i);
-                        Tuple<double[], double[], List<double>> ans = RankedMagnitudeConvert(rank, i, sw); // Console 出力の継続
-                        magnitudes.AddRange(ans.Item1);
-                        waveform.AddRange(ans.Item2);
-                    }
-                    #endregion
-                }
+                waveform.AddRange(InverseSTDFT(ShortTimeRankedValue(rank, timeWindow)));
             }
 
-            return Tuple.Create(magnitudes.ToArray(), waveform.ToArray());
+            return waveform.ToArray();
+        }
+
+        private double[] ShortTimeRankedValue(int[] rank, int groupIndex)
+        {
+            ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
+            ac.FTransform(Fourier.ComplexFunc.FFT);
+
+            ac = new ActiveComplex(ac.RankedComplex(rank).ToArray());
+            ac.FTransform(Fourier.ComplexFunc.IFFT);
+
+            return ac.GetReality().ToArray();
         }
     }
+
 }

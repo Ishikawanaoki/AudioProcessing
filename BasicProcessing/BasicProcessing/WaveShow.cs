@@ -18,6 +18,7 @@ namespace BasicProcessing
         public double[] rDataList;
         public WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
+        public readonly int[] rank;
         /// <summary>
         /// 引数なしのコンストラクタは無効
         /// （フィールドは空）
@@ -25,6 +26,7 @@ namespace BasicProcessing
         public WaveShow()
         {
             InitializeComponent();
+            rank = new int[3]{ 2,3,4};
         }
         /// <summary>
         /// 第１番目のウィンドウから基本呼び出される。
@@ -39,6 +41,8 @@ namespace BasicProcessing
         public WaveShow(List<short> lDataList1, List<short> rDataList1, WaveReAndWr.WavHeader header)
         {
             InitializeComponent();
+            rank = new int[3] { 2, 3, 4 };
+
             // コレクションの取り出し（配列化）
             short[] ltmp = lDataList1.ToArray();
             short[] rtmp = rDataList1.ToArray();
@@ -214,17 +218,17 @@ namespace BasicProcessing
         /// 
         /// </summary>
         /// <param name="divnum">波形の等分する分割数</param>
-        private void testMyAnalys(int divnum, int rank)
+        private void testMyAnalys(int divnum, int[] rank)
         {
             double[] RspeAna;
             double[] LspeAna;
 
             // 短時間フーリエ変換するための格納・実行クラスの生成
-            DSP.ComplexStaff ex
-                = new DSP.ComplexStaff(divnum, lDataList);
+            DSP.ComplexStaff ex;
 
-            Tuple<double[], double[]> tuple = ex.DoSTDFT(rank, root + @"\LeftSide.txt");
-            LspeAna = tuple.Item2;
+
+            ex = new DSP.ComplexStaff(divnum, lDataList);
+            LspeAna = ex.DoSTDFT(rank);
             Console.WriteLine("LFの実行");
 
             // 結果のグラフ表示
@@ -235,7 +239,7 @@ namespace BasicProcessing
             Plot(chart2, LspeAna);
 
             ex = new DSP.ComplexStaff(divnum, rDataList);
-            RspeAna = ex.DoSTDFT(rank, root + @"\RightSide.txt").Item2;
+            RspeAna = ex.DoSTDFT(rank);
             Console.WriteLine("RFの実行");
 
             string filename = root + @"\mypractice.wav";
@@ -252,7 +256,7 @@ namespace BasicProcessing
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
-            testMyAnalys(5, 2000);
+            testMyAnalys(5, rank);
             DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
             
             Console.WriteLine("アクションが終了しました。");
@@ -265,7 +269,7 @@ namespace BasicProcessing
             DSP.ComplexStaff ex
                 = new DSP.ComplexStaff(2000, lDataList);
 
-            double[][] heldz = ex.GetHeldz(1);
+            double[][] heldz = ex.GetHeldz(rank);
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))

@@ -28,28 +28,29 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.start_button = new System.Windows.Forms.Button();
             this.Encode_button = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
+            this.CountUp_button = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.SuspendLayout();
             // 
             // chart1
             // 
-            chartArea1.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            this.chart1.Legends.Add(legend1);
+            chartArea2.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            this.chart1.Legends.Add(legend2);
             this.chart1.Location = new System.Drawing.Point(12, 66);
             this.chart1.Name = "chart1";
-            series1.ChartArea = "ChartArea1";
-            series1.Legend = "Legend1";
-            series1.Name = "Series1";
-            this.chart1.Series.Add(series1);
+            series2.ChartArea = "ChartArea1";
+            series2.Legend = "Legend1";
+            series2.Name = "Series1";
+            this.chart1.Series.Add(series2);
             this.chart1.Size = new System.Drawing.Size(300, 300);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
@@ -78,17 +79,28 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(186, 18);
+            this.label1.Location = new System.Drawing.Point(248, 18);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(35, 12);
             this.label1.TabIndex = 3;
             this.label1.Text = "label1";
+            // 
+            // CountUp_button
+            // 
+            this.CountUp_button.Location = new System.Drawing.Point(289, 13);
+            this.CountUp_button.Name = "CountUp_button";
+            this.CountUp_button.Size = new System.Drawing.Size(75, 23);
+            this.CountUp_button.TabIndex = 4;
+            this.CountUp_button.Text = "Push";
+            this.CountUp_button.UseVisualStyleBackColor = true;
+            this.CountUp_button.Click += new System.EventHandler(this.CountUp_button_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(373, 402);
+            this.Controls.Add(this.CountUp_button);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.Encode_button);
             this.Controls.Add(this.start_button);
@@ -107,6 +119,7 @@
         private System.Windows.Forms.Button start_button;
         private System.Windows.Forms.Button Encode_button;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button CountUp_button;
     }
 }
 
