@@ -268,7 +268,7 @@ namespace BasicProcessing
 
             // 短時間フーリエ変換するための格納・実行クラスの生成
             DSP.ComplexStaff ex
-                = new DSP.ComplexStaff(2000, lDataList);
+                = new DSP.ComplexStaff(divnum, lDataList);
 
             double[][] heldz = ex.GetHeldz(rank);
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
@@ -277,15 +277,18 @@ namespace BasicProcessing
                 {
                     foreach (double[] str in heldz)
                     {
+                        int length = str.Length-1;
                         #region changed 201610111559
                         foreach (double data in str)
                         {
                             //sw.Write(data + ",");
-                            sw.WriteLine(data + ",");
-
+                            sw.Write(data);
+                            if (length-- > 0)
+                                sw.Write(",");
+                            else
+                                sw.WriteLine();
                             Console.Write("{0},", data);
                         }
-                        sw.WriteLine("");
                         //Console.WriteLine("");
                         #endregion
 

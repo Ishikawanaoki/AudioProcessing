@@ -401,6 +401,9 @@ namespace DSP
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
             this.dividedNum = dividedNum;
+
+            // ハイパスに通す
+            this.rawSign = TimeDomain.Filter.HighPass(rawSign, 2000).ToArray();
             this.rawSign = rawSign;
 
             if (dividedNum > 0)
@@ -413,16 +416,28 @@ namespace DSP
         /// <param name="sign"></param>
         private double[] AssignSignal(int groupIndex)
         {
+            // 短時間に分割
             double[] shortSign = new double[shortLength];
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
-            return shortSign; 
+
+            // ハイパスに通す
+            //shortSign = TimeDomain.Filter.HighPass(shortSign, 2000).ToArray();
+
+            return shortSign;
         }
         private double[] ShortTimeRankedHeldz(int[] rank, int groupIndex)
         {
+            //ActiveComplex.realcount = 0; ActiveComplex._tmp_counter = 0;
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
             ac.FTransform(Fourier.ComplexFunc.FFT);
+            //Console.WriteLine("group:{0},pass:{1},allcount:{2}", groupIndex,ActiveComplex._tmp_counter, ActiveComplex.realcount);
 
-            return ac.GetHeldz(rank).ToArray();
+            double[] tmp = ac.GetHeldz(rank).ToArray();
+            //Console.Write("{");
+            //foreach (var str in tmp)
+                //Console.Write("{0} ,", str);
+            //Console.WriteLine();
+            return tmp;
         }
         private double[] ShortTimeRankedMagnitude(int[] rank, int groupIndex)
         {

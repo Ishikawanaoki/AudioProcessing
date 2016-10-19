@@ -201,19 +201,39 @@ namespace function
         /// </summary>
         /// <param name="rank"></param>
         /// <returns></returns>
+        /// 
+
+        public static int _tmp_counter = 0;
+        public static int realcount = 0;
         public IEnumerable<int> GetRanked_Index(int[] rank)
         {
             foreach(var str in GetRanked_Muximums(rank))
             {
+                bool tmp = false;
                 yield return GetMagnitude()
                     .Select((val, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
                     {
-                        if (val == str) return index; // 任意順位 str に該当
+                        //Console.Write("val:{0}, ",val);
+                        realcount++;
+                        if (val == str)
+                        {
+                            //Console.WriteLine("str:{0}: Ok", str);
+
+                            return index; // 任意順位 str に該当
+                        }
                         else return -1;               // 該当なし
                     })
-                    .Where(c => c > 0)                // 該当なしを弾く 
+                    .Where(c => c > 0)                // 該当なしを弾く
+                    .Select(c => {
+                        //Console.WriteLine("c:{0}:Ok",c);
+                        tmp = true; _tmp_counter++;
+                        return c;
+                    }) 
                     .FirstOrDefault();                         // 最初の対象を
-                                                      // シーケンスで返す
+                //Console.WriteLine("str:{0}",str);
+                //Console.WriteLine("test:{0},pass:{1},allcount:{2}", _tmp_counter, realcount);
+                Console.Read(); // シーケンスで返す
+                
             }
         }
         public IEnumerable<Complex> RankedComplex(int[] rank)
