@@ -31,6 +31,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
+            this.chart1_checkBox = new System.Windows.Forms.CheckBox();
+            this.chart2_checkBox = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // label1
@@ -62,11 +64,34 @@
             this.button3.UseVisualStyleBackColor = true;
             this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
+            // chart1_checkBox
+            // 
+            this.chart1_checkBox.AutoSize = true;
+            this.chart1_checkBox.Location = new System.Drawing.Point(256, 41);
+            this.chart1_checkBox.Name = "chart1_checkBox";
+            this.chart1_checkBox.Size = new System.Drawing.Size(56, 16);
+            this.chart1_checkBox.TabIndex = 6;
+            this.chart1_checkBox.Text = "chart1";
+            this.chart1_checkBox.UseVisualStyleBackColor = true;
+            this.chart1_checkBox.CheckedChanged += new System.EventHandler(this.chart1_checkBox_CheckedChanged);
+            // 
+            // chart2_checkBox
+            // 
+            this.chart2_checkBox.AutoSize = true;
+            this.chart2_checkBox.Location = new System.Drawing.Point(256, 63);
+            this.chart2_checkBox.Name = "chart2_checkBox";
+            this.chart2_checkBox.Size = new System.Drawing.Size(56, 16);
+            this.chart2_checkBox.TabIndex = 7;
+            this.chart2_checkBox.Text = "chart2";
+            this.chart2_checkBox.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(351, 137);
+            this.Controls.Add(this.chart2_checkBox);
+            this.Controls.Add(this.chart1_checkBox);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.label1);
@@ -84,6 +109,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.CheckBox chart1_checkBox;
+        private System.Windows.Forms.CheckBox chart2_checkBox;
     }
 }
 

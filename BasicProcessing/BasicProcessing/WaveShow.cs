@@ -14,6 +14,9 @@ namespace BasicProcessing
     /// </summary>
     public partial class WaveShow : Form
     {
+        private bool chart1_state;
+        private bool chart2_state;
+
         public double[] lDataList;
         public double[] rDataList;
         public WaveReAndWr.WavHeader header;
@@ -39,9 +42,13 @@ namespace BasicProcessing
         /// <param name="lDataList1">short型をコレクションとするList</param>
         /// <param name="rDataList1">short型をコレクションとするList</param>
         /// <param name="header"></param>
-        public WaveShow(List<short> lDataList1, List<short> rDataList1, WaveReAndWr.WavHeader header)
+        public WaveShow(List<short> lDataList1, List<short> rDataList1, WaveReAndWr.WavHeader header, bool str1, bool str2)
         {
             InitializeComponent();
+
+            chart1_state = str1;
+            chart2_state = str2;
+
             rank = new int[3] { 2, 3, 4 };
 
             // コレクションの取り出し（配列化）
@@ -80,6 +87,23 @@ namespace BasicProcessing
         private void button1_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。");
+
+            test_Filter();
+
+            Console.WriteLine("アクションが終了しました。");
+        }
+        private void test_Filter()
+        {
+            chart1_state = true; chart2_state = true;
+
+            //Ldata
+            function.ActiveComplex ac = new function.ActiveComplex(lDataList, Fourier.WindowFunc.Hamming);
+
+            Plot(chart1, ac.HighPassDSP(2000).ToArray());
+            Plot(chart2, ac.LowPassDSP(2000).ToArray());
+        }
+        private void CompareWindows()
+        {
             //testMyAnalys(2000);
             //DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
             //test.Execute();
@@ -107,7 +131,6 @@ namespace BasicProcessing
                     function.File.ConvertDoubletoShort(dlist, 10));
                 Console.WriteLine("{0}が保存されました。", filename);
             }
-            Console.WriteLine("アクションが終了しました。");
         }
         /// <summary>
         /// 現在のchar1を保存。
@@ -153,6 +176,9 @@ namespace BasicProcessing
         /// <param name="no">2つのchartを分別して、描写対象を決定できる</param>
         private void Plot(Chart str, double[] y)
         {
+            if (str == chart1 && !chart1_state) return;
+            if (str == chart2 && !chart2_state) return;
+
             function.File f = new function.File();
             function.Axis plot_axis = f.Plot(str, y, "Area1", "時間 [s]");
             label1.Text = "DTime : " + plot_axis.time.ToString();

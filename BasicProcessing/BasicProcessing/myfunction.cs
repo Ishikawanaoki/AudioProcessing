@@ -65,6 +65,11 @@ namespace function
             time = 1 / sampling_frequency;
             frequency = sampling_frequency / sample_value;
         }
+        public static double GetFre(double sample_value)
+        {
+            int fs = 44100;
+            return fs / sample_value;
+        }
         /// <summary>
         /// axis[0] = time
         /// axis[1] = frequency;
@@ -308,6 +313,42 @@ namespace function
             FTransform(Fourier.ComplexFunc.IFFT);
             return GetMagnitude().ToArray();
         }
+        // new added
+        // Pass <- 
+        private IEnumerable<double> OnlyReal(IEnumerable<Complex> cmp)
+        {
+            return cmp.Select(c => c.real);
+        }
+        public IEnumerable<double> HighPassDSP(int fr)
+        {
+            var converted = Fourier.FFT(complex);
+            
+            double divfre = Axis.GetFre(complex.Count());
+            int count = 1;
+            while (fr >= divfre * count) count++;
+
+            var passed =  converted.Select((val, index) => {
+                if (index <= count) return new Complex(0,0);
+                else                return val;
+            });
+
+            return OnlyReal(Fourier.IFFT(passed));
+        }
+        public IEnumerable<double> LowPassDSP(int fr)
+        {
+            var converted = Fourier.FFT(complex);
+
+            double divfre = Axis.GetFre(complex.Count());
+            int count = 1;
+            while (fr >= divfre * count) count++;
+
+            var passed = converted.Select((val, index) => {
+                if (index <= count) return val;
+                else return new Complex(0, 0);
+            });
+
+            return OnlyReal(Fourier.IFFT(passed));
+        }
     }
     /// <summary>
     /// 複素数を実部虚部に分けて格納する構造体です。
@@ -347,6 +388,10 @@ namespace function
         {
             Complex data = new Complex(r * Math.Cos(radians), r * Math.Sin(radians));
             return data;
+        }
+        public static Complex from_polar_times(double radians)
+        {
+            return new Complex(Math.Cos(radians), Math.Sin(radians));
         }
         /// <summary>
         /// 複素数同士の和
@@ -490,6 +535,11 @@ namespace function
             }
             throw new ArgumentNullException();
         }
+        public static IEnumerable<Complex> FTransForm(IEnumerable<Complex> x)
+        {
+            return IFFT(x);
+        }
+
         /// <summary>
         /// 離散フーリエ変換
         /// 回転子 double型 d_theta
@@ -595,6 +645,38 @@ namespace function
                 X[k + N / 2] = E[k] - D[k];
             }
             return X;
+        }
+        public static IEnumerable<Complex> FFT(IEnumerable<Complex> x)
+        {
+            int N = EnableLines(x.Count());
+
+            var X = Enumerable.Range(0, N).Select(c => new Complex(0, 0));
+
+            var e = Enumerable.Range(0, N / 2).Select((val, index) => X.ElementAtOrDefault(2 * index));
+            var d = Enumerable.Range(0, N / 2).Select((val, index) => X.ElementAtOrDefault(2 * index + 1));
+
+            var D = FFT(d);
+            var E = FFT(e);
+
+            double d_theta = (-2) * Math.PI / N;
+            D = Enumerable.Range(0, N /2)
+                .Select(c => D.ElementAtOrDefault(c) * Complex.from_polar_times(d_theta * c));
+
+            return Enumerable.Range(0, N / 2).Select((val, index) => {
+                if (index < N / 2) return E.ElementAtOrDefault(index) + D.ElementAtOrDefault(index);
+                else               return E.ElementAtOrDefault(index) - D.ElementAtOrDefault(index);
+            });
+
+        }
+        public static IEnumerable<Complex> IFFT(IEnumerable<Complex> x)
+        {
+           var y =  x.Select(c =>{
+                return c.ChangeToConjugate();
+            });
+            x = FFT(y);
+            return x.Select(c => {
+                return new Complex(c.real / x.Count(), c.img / x.Count());
+            });
         }
         private static Complex[] IFFT(Complex[] x)
         {

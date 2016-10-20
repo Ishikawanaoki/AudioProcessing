@@ -87,9 +87,9 @@ namespace BasicProcessing
             ShowGlaph Glaph = new ShowGlaph(Show);
             Glaph(data);
         }
-        static void Show(DataList<short> datalist)
+        private void Show(DataList<short> datalist)
         {
-            WaveShow show = new WaveShow(datalist.lDataList, datalist.rDataList, datalist.WavHeader);
+            WaveShow show = new WaveShow(datalist.lDataList, datalist.rDataList, datalist.WavHeader, chart1_checkBox.Checked, chart2_checkBox.Checked);
             show.Show();
         }
 
@@ -121,6 +121,11 @@ namespace BasicProcessing
                 root = new string(chArray3);
                 IOFile[1] = root + @"\" + safeFileName + ".txt";
             }
+        }
+
+        private void chart1_checkBox_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
