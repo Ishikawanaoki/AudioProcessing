@@ -214,30 +214,19 @@ namespace function
         {
             foreach(var str in GetRanked_Muximums(rank))
             {
-                bool tmp = false;
                 yield return GetMagnitude()
                     .Select((val, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
                     {
-                        //Console.Write("val:{0}, ",val);
                         realcount++;
-                        if (val == str)
-                        {
-                            //Console.WriteLine("str:{0}: Ok", str);
-
-                            return index; // 任意順位 str に該当
-                        }
-                        else return -1;               // 該当なし
+                        if (val == str) return index;             // 任意順位 str に該当
+                        else            return -1;               // 該当なし
                     })
                     .Where(c => c > 0)                // 該当なしを弾く
                     .Select(c => {
-                        //Console.WriteLine("c:{0}:Ok",c);
-                        tmp = true; _tmp_counter++;
                         return c;
                     }) 
-                    .FirstOrDefault();                         // 最初の対象を
-                //Console.WriteLine("str:{0}",str);
-                //Console.WriteLine("test:{0},pass:{1},allcount:{2}", _tmp_counter, realcount);
-                Console.Read(); // シーケンスで返す
+                    .FirstOrDefault();                 // 最初の対象を
+                                                       // シーケンスで返す
                 
             }
         }
@@ -388,8 +377,7 @@ namespace function
         /// <returns></returns>
         public static Complex from_polar(double r, double radians)
         {
-            Complex data = new Complex(r * Math.Cos(radians), r * Math.Sin(radians));
-            return data;
+            return new Complex(r * Math.Cos(radians), r * Math.Sin(radians));
         }
         public static Complex from_polar_times(double radians)
         {
@@ -652,17 +640,20 @@ namespace function
         {
             int N = EnableLines(x.Count());
 
-            var X = Enumerable.Range(0, N).Select(c => new Complex(0, 0));
+            var X = Enumerable.Range(0, N).Select((val, index) => {
+                if (index == 0) return x.ElementAtOrDefault(0);
+                else return new Complex(0, 0);
+            });
 
-            var e = Enumerable.Range(0, N / 2).Select((val, index) => X.ElementAtOrDefault(2 * index));
-            var d = Enumerable.Range(0, N / 2).Select((val, index) => X.ElementAtOrDefault(2 * index + 1));
+            var e = Enumerable.Range(0, N / 2).Select((val, index) => x.ElementAtOrDefault(2 * index));
+            var d = Enumerable.Range(0, N / 2).Select((val, index) => x.ElementAtOrDefault(2 * index + 1));
 
             var D = FFT(d);
             var E = FFT(e);
 
             double d_theta = (-2) * Math.PI / N;
             D = Enumerable.Range(0, N /2)
-                .Select(c => D.ElementAtOrDefault(c) * Complex.from_polar_times(d_theta * c));
+                .Select((val, index) => D.ElementAtOrDefault(index) * Complex.from_polar_times(d_theta * index));
 
             return Enumerable.Range(0, N / 2).Select((val, index) => {
                 if (index < N / 2) return E.ElementAtOrDefault(index) + D.ElementAtOrDefault(index);
