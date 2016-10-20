@@ -332,7 +332,8 @@ namespace function
                 else                return val;
             });
 
-            return OnlyReal(Fourier.IFFT(passed));
+            //return OnlyReal(Fourier.IFFT(passed));
+            return OnlyReal(passed);
         }
         public IEnumerable<double> LowPassDSP(int fr)
         {
@@ -347,7 +348,8 @@ namespace function
                 else return new Complex(0, 0);
             });
 
-            return OnlyReal(Fourier.IFFT(passed));
+            //return OnlyReal(Fourier.IFFT(passed));
+            return OnlyReal(passed);
         }
     }
     /// <summary>
