@@ -187,28 +187,32 @@ namespace function
         /// <param name="rank"></param>
         /// <returns></returns>
         /// 
-
-        public static int _tmp_counter = 0;
-        public static int realcount = 0;
         public IEnumerable<int> GetRanked_Index(int[] rank)
         {
-            foreach(var str in GetRanked_Muximums(rank))
+            foreach(var value in GetRanked_Muximums(rank))
             {
                 yield return GetMagnitude()
                     .Select((val, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
                     {
-                        realcount++;
-                        if (val == str) return index;             // 任意順位 str に該当
+                        if (val == value) return index;             // 任意順位 str に該当
                         else            return -1;               // 該当なし
                     })
                     .Where(c => c > 0)                // 該当なしを弾く
-                    .Select(c => {
-                        return c;
-                    }) 
                     .FirstOrDefault();                 // 最初の対象を
                                                        // シーケンスで返す
                 
             }
+        }
+        public IEnumerable<int> GetRanked_Indexies(int rank)
+        {
+            int[] tmp = new int[1];tmp[0] = rank;
+            double value = GetRanked_Muximums(tmp).FirstOrDefault();
+            return GetMagnitude().Select((val, index) =>
+            {
+                if (value == val) return index;
+                else return -1;
+            }).Where(c => c > 0);
+
         }
         public IEnumerable<Complex> RankedComplex(int[] rank)
         {
@@ -227,6 +231,23 @@ namespace function
                 else return new Complex(0,0);
             });
         }
+        public IEnumerable<Complex> RankedComplex(int rank)
+        {
+            return complex.Select((name, index) =>
+            {
+                bool flag = false;
+                foreach (var str in GetRanked_Indexies(rank))
+                {
+                    if (index == str)
+                    {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag) return name;
+                else return new Complex(0, 0);
+            });
+        }
         /// <summary>
         /// 配列rankに対する周波数のみを透過させるフィルタ
         /// </summary>
@@ -234,24 +255,38 @@ namespace function
         /// <returns></returns>
         public IEnumerable<double> RankedMagnitude(int[] rank)
         {
-            IEnumerable<double> tmp;
-            IEnumerable<double> ans = Enumerable.Range(0, complex.Length).Select(c => 1.0); // 全て1
+            //IEnumerable<double> tmp;
+            //IEnumerable<double> ans = Enumerable.Range(0, complex.Length).Select(c => 1.0); // 全て1
 
-            foreach (var str in GetRanked_Muximums(rank))
+            //foreach (var str in GetRanked_Muximums(rank))
+            //{
+            //    tmp = GetMagnitude()
+            //        .Select((num, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
+            //        {
+            //            if (num == str) return num; // 透過
+            //           else return 0.0;              // 遮断
+            //        });
+            //    ans = ans.SelectMany((t) => tmp,(t, a) => t * a);
+            //}
+            //return ans;
+            return GetMagnitude().Select((name, index) =>
             {
-                tmp = GetMagnitude()
-                    .Select((num, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
+                bool flag = false;
+                foreach (var str in GetRanked_Index(rank))
+                {
+                    if (index == str)
                     {
-                        if (num == str) return num; // 透過
-                        else return 0.0;              // 遮断
-                    });
-                ans = ans.SelectMany((t) => tmp,(t, a) => t * a);
-            }
-            return ans;
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag) return name;
+                else return 0.0;
+            });
         }
         public IEnumerable<double> GetHeldz(int[] rank)
         {
-            double length = this.complex.Length; // 時間窓の大きさ
+            double length = complex.Length; // 時間窓の大きさ
             Axis axis = new Axis(length, 44100); // 軸計算
 
             double axis_fru = axis.frequency; // グラフ : 周波数-振幅スペクトルでの周波数の一目盛り
@@ -261,7 +296,22 @@ namespace function
                 double tmp = item;
                 if (item < length/2){ tmp *= axis_fru; }
                 else{ tmp *= axis_fru * (-1); }
-                yield return function.otherUser.Music.OneMusicalScale(item);
+                yield return function.otherUser.Music.OneMusicalScale(tmp);
+            }
+        }
+        public IEnumerable<double> GetHeldzz(int rank)
+        {
+            double length = complex.Length; // 時間窓の大きさ
+            Axis axis = new Axis(length, 44100); // 軸計算
+
+            double axis_fru = axis.frequency; // グラフ : 周波数-振幅スペクトルでの周波数の一目盛り
+
+            foreach (var item in GetRanked_Indexies(rank))
+            {
+                double tmp = item;
+                if (item < length / 2) { tmp *= axis_fru; }
+                else { tmp *= axis_fru * (-1); }
+                yield return function.otherUser.Music.OneMusicalScale(tmp);
             }
         }
 
