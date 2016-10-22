@@ -133,40 +133,22 @@ namespace function
     /// </summary>
     public class ActiveComplex
     {
-        private List<Complex> complex;
-        //private int _length;
-        /// <summary>
-        /// double配列から呼び出される。
-        /// double[] => Complex[]にするためには、必ず内部でAdd()が呼び出される
-        /// </summary>
-        /// <param name="items"></param>
+        private Complex[] complex;
         public int Getlength()
         {
-            return complex.Count;
+            return complex.Length;
         }
         public ActiveComplex(double[] items)
         {
-            complex = new List<Complex>();
-            Add(items);
+            complex = items.Select(c => {return new Complex(c, 0);}).ToArray();
         }
         public ActiveComplex(double[] items, Fourier.WindowFunc wfunc)
         {
-            complex = new List<Complex>();
-            Add(Fourier.Windowing(items, wfunc));
+            complex = Fourier.Windowing(items, wfunc).Select(c => { return new Complex(c, 0); }).ToArray();
         }
         public ActiveComplex(Complex[] items)
         {
-            complex = items.ToList();
-        }
-        private void Add(double[] items)
-        {
-            foreach (double item in items)
-                complex.Add(new Complex(item, 0));
-        }
-        public IEnumerable<Complex> GetEnumerable()
-        {
-            foreach (var str in complex)
-                yield return str;
+            complex = items;
         }
         /// <summary>
         /// 振幅スペクトル列を返す
@@ -174,13 +156,11 @@ namespace function
         /// <returns></returns>
         public IEnumerable<double> GetMagnitude()
         {
-            foreach (Complex item in complex)
-                yield return item.magnitude;
+            return complex.Select(c => c.magnitude);
         }
         public IEnumerable<double> GetReality()
         {
-            foreach (Complex item in complex)
-                yield return item.real;
+            return complex.Select(c => c.real);
         }
         /// <summary>
         /// return IEnumerable contains a num of rank lines
@@ -232,7 +212,7 @@ namespace function
         }
         public IEnumerable<Complex> RankedComplex(int[] rank)
         {
-            return GetEnumerable().Select((name, index) => 
+            return complex.Select((name, index) => 
             {
                 bool flag = false;
                 foreach(var str in GetRanked_Index(rank))
@@ -255,7 +235,7 @@ namespace function
         public IEnumerable<double> RankedMagnitude(int[] rank)
         {
             IEnumerable<double> tmp;
-            IEnumerable<double> ans = Enumerable.Range(0, complex.Count).Select(c => 1.0); // 全て1
+            IEnumerable<double> ans = Enumerable.Range(0, complex.Length).Select(c => 1.0); // 全て1
 
             foreach (var str in GetRanked_Muximums(rank))
             {
@@ -271,7 +251,7 @@ namespace function
         }
         public IEnumerable<double> GetHeldz(int[] rank)
         {
-            double length = this.complex.Count; // 時間窓の大きさ
+            double length = this.complex.Length; // 時間窓の大きさ
             Axis axis = new Axis(length, 44100); // 軸計算
 
             double axis_fru = axis.frequency; // グラフ : 周波数-振幅スペクトルでの周波数の一目盛り
@@ -293,8 +273,8 @@ namespace function
         /// <returns></returns>
         public Complex[] FTransform(Fourier.ComplexFunc cfunc)
         {
-            complex = new List<Complex>(Fourier.FTransform(complex.ToArray(), cfunc));
-            return complex.ToArray();
+            complex = Fourier.FTransform(complex.ToArray(), cfunc);
+            return complex;
         }
         public double[] FunctionTie()
         {
@@ -308,37 +288,33 @@ namespace function
         {
             return cmp.Select(c => c.real);
         }
-        public IEnumerable<double> HighPassDSP(int fr)
+        public Tuple<double[],double[]>  HighPassDSP(int fr)
         {
-            var converted = Fourier.FFT(complex);
+            Complex[] converted =Fourier.FTransform(complex.ToArray(), Fourier.ComplexFunc.FFT);
+
+            int target = Enumerable.Range(0, int.MaxValue).Where(c => fr <= Axis.GetFre(converted.Count()) * c).FirstOrDefault();
             
-            double divfre = Axis.GetFre(complex.Count());
-            int count = 1;
-            while (fr >= divfre * count) count++;
-
-            var passed =  converted.Select((val, index) => {
-                if (index <= count) return new Complex(0,0);
+            Complex[] cutoff =  converted.Select((val, index) => {
+                if (index <= target) return new Complex(0,0);
                 else                return val;
-            });
+            }).ToArray();
 
             //return OnlyReal(Fourier.IFFT(passed));
-            return OnlyReal(passed);
+            return new Tuple<double[], double[]>(OnlyReal(converted).ToArray(), OnlyReal(cutoff).ToArray());
         }
-        public IEnumerable<double> LowPassDSP(int fr)
+        public Tuple<double[], double[]> LowPassDSP(int fr)
         {
-            var converted = Fourier.FFT(complex);
+            Complex[] converted = Fourier.FTransform(complex, Fourier.ComplexFunc.FFT);
 
-            double divfre = Axis.GetFre(complex.Count());
-            int count = 1;
-            while (fr >= divfre * count) count++;
+            int target = Enumerable.Range(0, int.MaxValue).Where(c => fr >= Axis.GetFre(converted.Count()) * c).FirstOrDefault();
 
-            var passed = converted.Select((val, index) => {
-                if (index <= count) return val;
+            Complex[] cutoff = converted.Select((val, index) => {
+                if (index <= target) return val;
                 else return new Complex(0, 0);
-            });
+            }).ToArray();
 
             //return OnlyReal(Fourier.IFFT(passed));
-            return OnlyReal(passed);
+            return new Tuple<double[], double[]>(OnlyReal(converted).ToArray(), OnlyReal(cutoff).ToArray());
         }
     }
     /// <summary>
@@ -443,9 +419,7 @@ namespace function
         /// <returns></returns>
         public Complex ChangeToConjugate()
         {
-            return new Complex(
-                real, img * (-1)
-                );
+            return new Complex(real, img * (-1));
         }
     }
     /// <summary>
@@ -509,6 +483,34 @@ namespace function
                 windata[i] = data[i] * winValue;
             }
             return windata;
+        }
+        public static IEnumerable<double> Windowing(IEnumerable<double> data, WindowFunc windowFunc)
+        {
+            int size = data.Count();
+            return data.Select((val, index) =>
+            {
+                double winValu = 0.0;
+                switch (windowFunc)
+                {
+                    case WindowFunc.Hamming:
+                        winValu = 0.54 - 0.46 * Math.Cos(2 * Math.PI * index / (size - 1));
+                        break;
+                    case WindowFunc.Hanning:
+                        winValu = 0.5 - 0.5 * Math.Cos(2 * Math.PI * index / (size - 1)); ;
+                        break;
+                    case WindowFunc.Blackman:
+                        winValu = 0.42 - 0.5 * Math.Cos(2 * Math.PI * index / (size - 1))
+                                    + 0.08 * Math.Cos(4 * Math.PI * index / (size - 1));
+                        break;
+                    case WindowFunc.Rectangular:
+                        winValu = 1.0;
+                        break;
+                    default:
+                        winValu = 1.0;
+                        break;
+                }
+                return val * winValu;
+            });
         }
         public static Complex[] FTransform(Complex[] x, ComplexFunc func)
         {
@@ -638,6 +640,9 @@ namespace function
         }
         public static IEnumerable<Complex> FFT(IEnumerable<Complex> x)
         {
+            var start = DateTime.Now;
+
+
             int N = EnableLines(x.Count());
 
             var X = Enumerable.Range(0, N).Select((val, index) => {
@@ -654,6 +659,10 @@ namespace function
             double d_theta = (-2) * Math.PI / N;
             D = Enumerable.Range(0, N /2)
                 .Select((val, index) => D.ElementAtOrDefault(index) * Complex.from_polar_times(d_theta * index));
+
+
+            Console.WriteLine("N={0} : {1}", N, DateTime.Now - start);
+
 
             return Enumerable.Range(0, N / 2).Select((val, index) => {
                 if (index < N / 2) return E.ElementAtOrDefault(index) + D.ElementAtOrDefault(index);

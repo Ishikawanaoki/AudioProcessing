@@ -73,10 +73,27 @@ namespace BasicProcessing
 
             // 以下、左側のデータ列を扱う
             //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
-            Plot(chart1, lDataList);
-            ActiveComplex acomp = new ActiveComplex(lDataList, Fourier.WindowFunc.Blackman);
-            acomp.FTransform(Fourier.ComplexFunc.FFT);
-            Plot(chart2, acomp.GetMagnitude().ToArray());
+            //Plot(chart1, lDataList);
+            //ActiveComplex acomp = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Blackman);
+            //acomp.FTransform(function.Fourier.ComplexFunc.FFT);
+            //Plot(chart2, acomp.GetMagnitude().ToArray());
+
+            //ActiveComplex acomp = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
+            //Tuple<double[], double[]> tmp = acomp.HighPassDSP(2000);
+            //Plot(chart1, tmp.Item1);
+            //Plot(chart2, tmp.Item2);
+            ActiveComplex ac = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
+            
+            lDataList = DSP.TimeDomain.Filter.HighPass(lDataList, 2000).ToArray();
+            ActiveComplex ac2 = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
+
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+            ac2.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            Plot(chart1, ac.GetReality().ToArray());
+            Plot(chart2, ac2.GetReality().ToArray());
+
+
         }
         #region conPane
         private void WaveShow_Load(object sender, EventArgs e)
@@ -97,10 +114,10 @@ namespace BasicProcessing
             chart1_state = true; chart2_state = true;
 
             //Ldata
-            function.ActiveComplex ac = new function.ActiveComplex(lDataList, Fourier.WindowFunc.Hamming);
+            function.ActiveComplex ac = new function.ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
 
-            Plot(chart1, ac.HighPassDSP(2000).ToArray());
-            Plot(chart2, ac.LowPassDSP(2000).ToArray());
+            //Plot(chart1, ac.HighPassDSP(2000).ToArray());
+            //Plot(chart2, ac.LowPassDSP(2000).ToArray());
         }
         private void CompareWindows()
         {
@@ -115,7 +132,7 @@ namespace BasicProcessing
             ActiveComplex ac;
             double[] lData; double[] rData; string filename;
             WaveReAndWr.DataList<double> dlist;
-            foreach (Fourier.WindowFunc fu in func)
+            foreach (function.Fourier.WindowFunc fu in func)
             {
                 ac = new ActiveComplex(lDataList, fu);
                 lData = ac.FunctionTie();
@@ -323,12 +340,18 @@ namespace BasicProcessing
             }
             Console.WriteLine("配列を保存しました。");
         }
-        private double[] getSampleWave2()
+        private void button4_Click(object sender, EventArgs e)
         {
-            double[] ans = new double[200];
-            for (int i = 0; i < ans.Length; i++)
-                ans[i] = 0;
-            return ans;
+            List<double> wave = getSampleWave(lDataList.Max(), 1000, 44100, 200);
+
+            Plot(chart1, wave.ToArray());
+            Console.WriteLine("Process End");
+
+            string filename = root + @"\newwave.wav";
+
+            //function.File.Write(filename, dlist, 5);
+            WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(new WaveReAndWr.DataList<double>(wave, wave, header)));
+            Console.WriteLine("{0}を保存しました", filename);
         }
         private List<double> getSampleWave(double A, double f0, double fs, double length)
         {
@@ -343,21 +366,7 @@ namespace BasicProcessing
             }
             return list;
         }
-        private void button4_Click(object sender, EventArgs e)
-        {
-            List<double> wave = getSampleWave(lDataList.Max(), 1000, 44100, 200);
 
-            Plot(chart1, wave.ToArray());
-            Console.WriteLine("Process End");
-
-            string filename = root + @"\newwave.wav";
-
-            //function.File.Write(filename, dlist, 5);
-            WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(new WaveReAndWr.DataList<double>(wave, wave, header)));
-            Console.WriteLine("{0}を保存しました", filename);
-        }
-
-        
         private void ACF_button_Click(object sender, EventArgs e)
         {
             Plot(chart2, 

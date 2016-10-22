@@ -420,23 +420,12 @@ namespace DSP
             double[] shortSign = new double[shortLength];
             Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
 
-            // ハイパスに通す
-            //shortSign = TimeDomain.Filter.HighPass(shortSign, 2000).ToArray();
-
             return shortSign;
         }
         private double[] ShortTimeRankedHeldz(int[] rank, int groupIndex)
         {
-            //ActiveComplex.realcount = 0; ActiveComplex._tmp_counter = 0;
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
-            ac.FTransform(Fourier.ComplexFunc.FFT);
-            //Console.WriteLine("group:{0},pass:{1},allcount:{2}", groupIndex,ActiveComplex._tmp_counter, ActiveComplex.realcount);
-
-            double[] tmp = ac.GetHeldz(rank).ToArray();
-            //Console.Write("{");
-            //foreach (var str in tmp)
-                //Console.Write("{0} ,", str);
-            //Console.WriteLine();
+            ac.FTransform(Fourier.ComplexFunc.FFT); double[] tmp = ac.GetHeldz(rank).ToArray();
             return tmp;
         }
         private double[] ShortTimeRankedMagnitude(int[] rank, int groupIndex)
@@ -452,13 +441,6 @@ namespace DSP
             ac.FTransform(Fourier.ComplexFunc.IFFT);
             return ac.GetReality().ToArray();
         }
-        /// <summary>
-        /// 2016/10/04 拡張
-        /// 有効な周波数値の配列を返す
-        /// サンプルの時間間隔は、計算可能
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <returns></returns>
         public double[][] GetHeldz(int[] rank)
         {
             List<double[]> heldz = new List<double[]>();
