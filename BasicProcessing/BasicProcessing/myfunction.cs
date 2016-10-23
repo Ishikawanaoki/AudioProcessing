@@ -126,10 +126,124 @@ namespace function
                yield return (item / seikika * 100);
         }
     }
+
+    public class ComplexStaff
+    {
+        private readonly int dividedNum;     // 分割数
+        private readonly double[] rawSign;   // 変換前の波形データ（全体）
+        private readonly int shortLength;    // 短時間に対応するデータ数
+        #region public
+        public ComplexStaff(int dividedNum, double[] rawSign)
+        {
+            this.dividedNum = dividedNum;
+
+            // ハイパスに通す
+            //this.rawSign = TimeDomain.Filter.HighPass(rawSign, 2000).ToArray();
+            this.rawSign = rawSign;
+
+            if (dividedNum > 0)
+                shortLength = rawSign.Length / dividedNum;
+        }
+        public double[][] GetHertz(int[] rank)
+        {
+            // double[] をクエリして、IEnumerable<double[]>を生成
+            return Enumerable.Range(0, dividedNum).Select((_, index) =>
+                ShortTimeRankedHeldzInSame(rank, index)).ToArray();
+        }
+        public double[][] GetHertz2(int[] rank)
+        {
+            // double[] をクエリして、IEnumerable<double[]>を生成
+            return Enumerable.Range(0, TimeDomain.GetEfficientCount(rawSign)).Select((_, index) =>
+                ShortTimeRankedHeldzInDR(rank, index)).ToArray();
+        }
+        #endregion
+        #region private
+        /// <summary>
+        /// shortLength個のデータを、配列shortSignへ割り当てる。
+        /// </summary>
+        /// <param name="groupIndex"></param>
+        /// <param name="sign"></param>
+        private double[] AssignSignalInSame(int groupIndex)
+        {
+            // 短時間に分割
+            double[] shortSign = new double[shortLength];
+            Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
+
+            return shortSign;
+        }
+        private double[] AssignSignalInDefferRange(int groupIndex)
+        {
+            return TimeDomain.GetFixWave(rawSign, groupIndex).ToArray();
+        }
+        private double[] ShortTimeRankedHeldzInSame(int[] rank, int groupIndex)
+        {
+            ActiveComplex ac = new ActiveComplex(AssignSignalInSame(groupIndex), Fourier.WindowFunc.Hamming);
+            ac.FTransform(Fourier.ComplexFunc.FFT);
+            return ac.GetHertz(rank).ToArray();
+        }
+        private double[] ShortTimeRankedHeldzInDR(int[] rank, int groupIndex)
+        {
+            //Console.Write("{0},", groupIndex);
+            ActiveComplex ac = new ActiveComplex(AssignSignalInDefferRange(groupIndex), Fourier.WindowFunc.Hamming);
+            ac.FTransform(Fourier.ComplexFunc.FFT);
+            if (ac.isContain())
+            {
+                return ac.GetHertz(rank).ToArray();
+            }
+            else { return new double[shortLength]; }
+        }
+        #endregion
+        static class TimeDomain
+        {
+            private static IEnumerable<int> IndexOfChangepoint(double[] rawSign)
+            {
+                // 全体の5/100以下の微弱な変化は無視する
+                int c_counter = 0;
+                for (int i = 0; i < rawSign.Length; i++)
+                {
+                    // first step is skipped
+                    if (i == 0) { c_counter++; continue; }
+                    // change flag with comparing
+                    if (rawSign[i] * rawSign[i - 1] <= 0 && c_counter > rawSign.Length/20)
+                    {
+                        c_counter = 0;
+                        yield return Math.Abs(rawSign[i]) > Math.Abs(rawSign[i - 1]) ? (i - 1) : i;
+                    }
+                }
+            }
+            public static IEnumerable<double> GetFixWave(double[] rawSign, int groupIndex)
+            {
+                if (IndexOfChangepoint(rawSign).Count() < groupIndex) return new double[0];
+
+                int start = groupIndex == 0 ? 0 :IndexOfChangepoint(rawSign).ElementAt(groupIndex-1);
+                int end = groupIndex == 0 ? IndexOfChangepoint(rawSign).ElementAt(groupIndex) 
+                    : IndexOfChangepoint(rawSign).ElementAt(groupIndex);
+                return rawSign.Where((_, index) => index >= start && index <= end);
+            }
+            public static int GetEfficientCount(double[] rawSign)
+            {
+                return IndexOfChangepoint(rawSign).Count();
+            }
+        }
+    }
+
     /// <summary>
     /// Copmlex, Fourier クラスの呼び出しを統括する意図で定義
     /// フィールドにComplexリストを唯一保持して、なおかつその変更はメソッド呼出しにのみ有効
-    /// 短時間離散フーリエ変換においては、
+    /// 
+    /// (前処理)帯域制限、可変的短時間 の実装
+    /// (1)GetMagnitude 振幅スペクトル取得
+    ///    GetReality 余弦成分(double)取得
+    /// (2)GetRanked_Maximums 任意の順位に相当する最大の「振幅スペクトル」を単数、または複数取得
+    /// (3)GetRanked_Index 「最大の振幅スペクトル」を示すスペクトルの内、正で最も低い周波数へのインデックス
+    ///     => 短時間での、「任意の順位」にある「最大の振幅スペクトル」の最も低い周波数を活用
+    /// (4)GetHertz データ数とサンプリングレート(規定値44100Hz)より、「(3)のインデックス」から周波数を求める
+    ///             また、求めた周波数に対して、最も近い音階(12音律)に直す
+    ///             
+    /// 但し、(3)での「最も低い（低い段階で出現する）周波数」は作為的な選択であり、
+    /// 「振幅スペクトルの内n番目に大きいもの」は一つの短時間において2つ以上必ず存在するため、
+    /// '(3)GetRanked_indexies, '(4)GetHertzsを定義
+    /// 
     /// </summary>
     public class ActiveComplex
     {
@@ -158,9 +272,17 @@ namespace function
         {
             return complex.Select(c => c.magnitude);
         }
+        /// <summary>
+        /// 余弦成分の取得
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<double> GetReality()
         {
             return complex.Select(c => c.real);
+        }
+        public bool isContain()
+        {
+            return complex.Length != 0;
         }
         /// <summary>
         /// return IEnumerable contains a num of rank lines
@@ -172,11 +294,12 @@ namespace function
         {
             int countup = 1;
             double max = double.MaxValue;
-            foreach(var tmp in rank.OrderByDescending(t => t))
+            foreach(var tmp in rank.OrderBy(t => t)) //昇順に並び替える
             {
                 while (countup++ <= tmp)
                 {
-                    max = GetMagnitude().Where(c => c < max).Max();
+                    max = GetMagnitude()
+                        .Where(c => c < max).Max();
                 }
                 yield return max;
             }
@@ -203,7 +326,7 @@ namespace function
                 
             }
         }
-        public IEnumerable<int> GetRanked_Indexies(int rank)
+        /*public IEnumerable<int> GetRanked_Indexies(int rank)
         {
             int[] tmp = new int[1];tmp[0] = rank;
             double value = GetRanked_Muximums(tmp).FirstOrDefault();
@@ -213,7 +336,7 @@ namespace function
                 else return -1;
             }).Where(c => c > 0);
 
-        }
+        }*/
         public IEnumerable<Complex> RankedComplex(int[] rank)
         {
             return complex.Select((name, index) => 
@@ -231,7 +354,7 @@ namespace function
                 else return new Complex(0,0);
             });
         }
-        public IEnumerable<Complex> RankedComplex(int rank)
+        /*public IEnumerable<Complex> RankedComplex(int rank)
         {
             return complex.Select((name, index) =>
             {
@@ -248,27 +371,14 @@ namespace function
                 else return new Complex(0, 0);
             });
         }
+        */
         /// <summary>
         /// 配列rankに対する周波数のみを透過させるフィルタ
         /// </summary>
         /// <param name="rank"></param>
         /// <returns></returns>
-        public IEnumerable<double> RankedMagnitude(int[] rank)
+        /*public IEnumerable<double> RankedMagnitude(int[] rank)
         {
-            //IEnumerable<double> tmp;
-            //IEnumerable<double> ans = Enumerable.Range(0, complex.Length).Select(c => 1.0); // 全て1
-
-            //foreach (var str in GetRanked_Muximums(rank))
-            //{
-            //    tmp = GetMagnitude()
-            //        .Select((num, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
-            //        {
-            //            if (num == str) return num; // 透過
-            //           else return 0.0;              // 遮断
-            //        });
-            //    ans = ans.SelectMany((t) => tmp,(t, a) => t * a);
-            //}
-            //return ans;
             return GetMagnitude().Select((name, index) =>
             {
                 bool flag = false;
@@ -283,8 +393,8 @@ namespace function
                 if (flag) return name;
                 else return 0.0;
             });
-        }
-        public IEnumerable<double> GetHeldz(int[] rank)
+        }*/
+        public IEnumerable<double> GetHertz(int[] rank)
         {
             double length = complex.Length; // 時間窓の大きさ
             Axis axis = new Axis(length, 44100); // 軸計算
@@ -299,7 +409,7 @@ namespace function
                 yield return function.otherUser.Music.OneMusicalScale(tmp);
             }
         }
-        public IEnumerable<double> GetHeldzz(int rank)
+        /*public IEnumerable<double> GetHertzs(int rank)
         {
             double length = complex.Length; // 時間窓の大きさ
             Axis axis = new Axis(length, 44100); // 軸計算
@@ -314,7 +424,7 @@ namespace function
                 yield return function.otherUser.Music.OneMusicalScale(tmp);
             }
         }
-
+        */
         /// <summary>
         /// 正方向、逆方向でのフーリエ解析呼び出し。
         /// 呼出しと共に、フィールド outbox は生成し直す。
@@ -332,8 +442,6 @@ namespace function
             FTransform(Fourier.ComplexFunc.IFFT);
             return GetMagnitude().ToArray();
         }
-        // new added
-        // Pass <- 
         private IEnumerable<double> OnlyReal(IEnumerable<Complex> cmp)
         {
             return cmp.Select(c => c.real);
@@ -356,7 +464,7 @@ namespace function
         {
             Complex[] converted = Fourier.FTransform(complex, Fourier.ComplexFunc.FFT);
 
-            int target = Enumerable.Range(0, int.MaxValue).Where(c => fr >= Axis.GetFre(converted.Count()) * c).FirstOrDefault();
+            int target = Enumerable.Range(0, int.MaxValue).Where(c => fr <= Axis.GetFre(converted.Count()) * c).FirstOrDefault();
 
             Complex[] cutoff = converted.Select((val, index) => {
                 if (index <= target) return val;
@@ -610,8 +718,7 @@ namespace function
         {
             int N = x.Length;
             Complex[] X = new Complex[N];
-            double d_theta = //(-2) * Math.PI / N;
-                2 * Math.PI / N;
+            double d_theta = 2 * Math.PI / N;
 
             // 以下、配列計算
             for (int k = 0; k < N; k++)
@@ -620,13 +727,27 @@ namespace function
                 for (int n = 0; n < N; n++)
                 {
                     Complex temp = Complex.from_polar(1, d_theta * n * k);
-                    temp *= x[n]; //演算子 * はオーバーライドしたもの
-                    X[k] += temp; //演算子 + はオーバーライドしたもの
+                    X[k] += temp * x[n]; //演算子 + はオーバーライドしたもの
                 }
                 X[k].real /= N;
                 X[k].img /= N;
             }
             return X;
+        }
+        private static IEnumerable<Complex> AcIDFT(double start, bool upDown, Complex[] x)
+        {
+            int N = x.Length;
+            double d_theta = 2 * Math.PI / N;
+
+            return Enumerable.Range(0, N).Select((_,k) => {
+                var query = x.Select((val, n) =>
+                    Complex.from_polar(1, d_theta * n * k) * val);
+
+                double real = query.Select(c => c.real).Sum();
+                double img = query.Select(c => c.img).Sum();
+
+                return new Complex(real, img);
+            });
         }
         private static int EnableLines(int length)
         {

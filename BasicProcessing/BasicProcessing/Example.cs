@@ -38,6 +38,46 @@ namespace BasicProcessing
                 }
                 return list;
             }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="divnum">波形の等分する分割数</param>
+            /*private void testMyAnalys()
+            {
+                double[] RspeAna;
+                double[] LspeAna;
+
+                // 短時間フーリエ変換するための格納・実行クラスの生成
+                DSP.ComplexStaff ex;
+
+
+                ex = new DSP.ComplexStaff(divnum, lDataList);
+                LspeAna = ex.DoSTDFT(rank);
+                Console.WriteLine("LFの実行");
+
+                // 結果のグラフ表示
+                // 左側の波形について
+                // chart1 : 実行前の波形
+                // chart2 : 実行後の波形
+                Plot(chart1, lDataList);
+                Plot(chart2, LspeAna);
+
+                ex = new DSP.ComplexStaff(divnum, rDataList);
+                RspeAna = ex.DoSTDFT(rank);
+                Console.WriteLine("RFの実行");
+
+                string filename = root + @"\mypractice.wav";
+                WaveReAndWr.DataList<double> dlist
+                    = new WaveReAndWr.DataList<double>(
+                        new List<double>(LspeAna),
+                        new List<double>(RspeAna), 
+                        header);
+
+                //function.File.Write(filename, dlist, 5);
+                WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(dlist));
+                Console.WriteLine("{0}を保存しました", filename);
+            }*/
         }
     }
 }

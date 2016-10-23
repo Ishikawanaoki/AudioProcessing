@@ -17,8 +17,8 @@ namespace BasicProcessing
         private bool chart1_state;
         private bool chart2_state;
 
-        public double[] lDataList;
-        public double[] rDataList;
+        public IEnumerable<double> lDataList;
+        public IEnumerable<double> rDataList;
         public WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
         public readonly int[] rank;
@@ -51,20 +51,8 @@ namespace BasicProcessing
 
             rank = new int[3] { 2, 3, 4 };
 
-            // コレクションの取り出し（配列化）
-            short[] ltmp = lDataList1.ToArray();
-            short[] rtmp = rDataList1.ToArray();
-
-            // フィールドの初期化
-            lDataList = new double[ltmp.Length];
-            rDataList = new double[rtmp.Length];
-
-            // 浮動小数点への変換
-            for (int i = 0; i < ltmp.Length; i++)
-            {
-                lDataList[i] = (double)ltmp[i];
-                rDataList[i] = (double)rtmp[i];
-            }
+            lDataList = lDataList1.Select(c => (double)c);
+            rDataList = rDataList1.Select(c => (double)c);
 
             // ヘッダーエラーは保留とする
             //これによると、不適切なファイルとして再生できないソフトもある。
@@ -73,25 +61,29 @@ namespace BasicProcessing
 
             // 以下、左側のデータ列を扱う
             //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
-            //Plot(chart1, lDataList);
-            //ActiveComplex acomp = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Blackman);
-            //acomp.FTransform(function.Fourier.ComplexFunc.FFT);
-            //Plot(chart2, acomp.GetMagnitude().ToArray());
+            Plot(chart1, lDataList);
+
+            if (chart2_state)
+            {
+                ActiveComplex acomp = new ActiveComplex(lDataList.ToArray(), function.Fourier.WindowFunc.Blackman);
+                acomp.FTransform(function.Fourier.ComplexFunc.FFT);
+                Plot(chart2, acomp.GetMagnitude().ToArray());
+             }
 
             //ActiveComplex acomp = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
             //Tuple<double[], double[]> tmp = acomp.HighPassDSP(2000);
             //Plot(chart1, tmp.Item1);
             //Plot(chart2, tmp.Item2);
-            ActiveComplex ac = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
-            
-            lDataList = DSP.TimeDomain.Filter.HighPass(lDataList, 2000).ToArray();
-            ActiveComplex ac2 = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
+            //ActiveComplex ac = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
 
-            ac.FTransform(function.Fourier.ComplexFunc.FFT);
-            ac2.FTransform(function.Fourier.ComplexFunc.FFT);
+            //lDataList = DSP.TimeDomain.Filter.HighPass(lDataList, 2000).ToArray();
+            //ActiveComplex ac2 = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
 
-            Plot(chart1, ac.GetReality().ToArray());
-            Plot(chart2, ac2.GetReality().ToArray());
+            //ac.FTransform(function.Fourier.ComplexFunc.FFT);
+            //ac2.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            //Plot(chart1, ac.GetReality().ToArray());
+            //Plot(chart2, ac2.GetReality().ToArray());
 
 
         }
@@ -114,7 +106,7 @@ namespace BasicProcessing
             chart1_state = true; chart2_state = true;
 
             //Ldata
-            function.ActiveComplex ac = new function.ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
+            function.ActiveComplex ac = new function.ActiveComplex(lDataList.ToArray(), function.Fourier.WindowFunc.Hamming);
 
             //Plot(chart1, ac.HighPassDSP(2000).ToArray());
             //Plot(chart2, ac.LowPassDSP(2000).ToArray());
@@ -134,9 +126,9 @@ namespace BasicProcessing
             WaveReAndWr.DataList<double> dlist;
             foreach (function.Fourier.WindowFunc fu in func)
             {
-                ac = new ActiveComplex(lDataList, fu);
+                ac = new ActiveComplex(lDataList.ToArray(), fu);
                 lData = ac.FunctionTie();
-                ac = new ActiveComplex(rDataList, fu);
+                ac = new ActiveComplex(rDataList.ToArray(), fu);
                 rData = ac.FunctionTie();
                 filename = root + @"\sound_" + fu.ToString() + ".wav";
                 dlist = new WaveReAndWr.DataList<double>(
@@ -191,13 +183,13 @@ namespace BasicProcessing
         /// </summary>
         /// <param name="y">1列のデータを用いて、グラフ表示します。</param>
         /// <param name="no">2つのchartを分別して、描写対象を決定できる</param>
-        private void Plot(Chart str, double[] y)
+        private void Plot(Chart str, IEnumerable<double> y)
         {
             if (str == chart1 && !chart1_state) return;
             if (str == chart2 && !chart2_state) return;
 
             function.File f = new function.File();
-            function.Axis plot_axis = f.Plot(str, y, "Area1", "時間 [s]");
+            function.Axis plot_axis = f.Plot(str, y.ToArray(), "Area1", "時間 [s]");
             label1.Text = "DTime : " + plot_axis.time.ToString();
             label2.Text = "DFreq : " + plot_axis.frequency.ToString();
         }
@@ -258,69 +250,69 @@ namespace BasicProcessing
             }
         }
         #endregion
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="divnum">波形の等分する分割数</param>
-        private void testMyAnalys()
-        {
-            double[] RspeAna;
-            double[] LspeAna;
-
-            // 短時間フーリエ変換するための格納・実行クラスの生成
-            DSP.ComplexStaff ex;
-
-
-            ex = new DSP.ComplexStaff(divnum, lDataList);
-            LspeAna = ex.DoSTDFT(rank);
-            Console.WriteLine("LFの実行");
-
-            // 結果のグラフ表示
-            // 左側の波形について
-            // chart1 : 実行前の波形
-            // chart2 : 実行後の波形
-            Plot(chart1, lDataList);
-            Plot(chart2, LspeAna);
-
-            ex = new DSP.ComplexStaff(divnum, rDataList);
-            RspeAna = ex.DoSTDFT(rank);
-            Console.WriteLine("RFの実行");
-
-            string filename = root + @"\mypractice.wav";
-            WaveReAndWr.DataList<double> dlist
-                = new WaveReAndWr.DataList<double>(
-                    new List<double>(LspeAna),
-                    new List<double>(RspeAna), 
-                    header);
-
-            //function.File.Write(filename, dlist, 5);
-            WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(dlist));
-            Console.WriteLine("{0}を保存しました", filename);
-        }
         private void test_button_Click(object sender, EventArgs e)
         {
-            Console.WriteLine("ボタンが押されました。");
-            testMyAnalys();
-            DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
-            
+            Console.WriteLine("ボタンが押されました。\n lData size : {0}",lDataList.Count());
+            testForHertz2();
             Console.WriteLine("アクションが終了しました。");
         }
         private void button5_Click(object sender, EventArgs e)
         {
-            string filename = root + @"\targetarray.txt";
+            Console.WriteLine("ボタンが押されました。\n lData size : {0}", lDataList.Count());
+            testForHertz();
+            Console.WriteLine("アクションが終了しました。");
+        }
+        private void testForHertz()
+        {
+            string filename = root + @"\testVer1.txt";
 
             // 短時間フーリエ変換するための格納・実行クラスの生成
-            DSP.ComplexStaff ex
-                = new DSP.ComplexStaff(divnum, lDataList);
+            function.ComplexStaff ex
+                = new function.ComplexStaff(divnum, lDataList.ToArray());
 
-            double[][] heldz = ex.GetHeldz(rank);
+            double[][] heldz = ex.GetHertz(rank);
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                 {
                     foreach (double[] str in heldz)
                     {
-                        int length = str.Length-1;
+                        int length = str.Length - 1;
+                        #region changed 201610111559
+                        foreach (double data in str)
+                        {
+                            //sw.Write(data + ",");
+                            sw.Write(data);
+                            if (length-- > 0)
+                                sw.Write(",");
+                            else
+                                sw.WriteLine();
+                            Console.Write("{0},", data);
+                        }
+                        //Console.WriteLine("");
+                        #endregion
+
+                    }
+                }
+            }
+            Console.WriteLine("配列を保存しました。");
+        }
+        private void testForHertz2()
+        {
+            string filename = root + @"\testVer2.txt";
+
+            // 短時間フーリエ変換するための格納・実行クラスの生成
+            function.ComplexStaff ex
+                = new function.ComplexStaff(divnum, lDataList.ToArray());
+
+            double[][] heldz = ex.GetHertz2(rank);
+            using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
+            {
+                using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
+                {
+                    foreach (double[] str in heldz)
+                    {
+                        int length = str.Length - 1;
                         #region changed 201610111559
                         foreach (double data in str)
                         {

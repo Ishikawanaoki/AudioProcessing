@@ -58,27 +58,81 @@ namespace DSP
                     yield return target;
                 }
             }
+            private static IEnumerable<int> IndexOfChangePoint(IEnumerable<double> rawSign)
+            {
+                // 全体の5/100以下の微弱な変化は無視する
+                int c_counter = 0;
+                for (int i = 0; i < rawSign.Count(); i++)
+                {
+                    // first step is skipped
+                    if (i == 0) { c_counter++; continue; }
+                    // change flag with comparing
+                    if (rawSign.ElementAt(i) * rawSign.ElementAt(i-1) < 0 && c_counter < rawSign.Count() / 20)
+                    {
+                        c_counter = 0;
+                        yield return Math.Abs(rawSign.ElementAt(i-1)) > Math.Abs(rawSign.ElementAt(i-1)) ? (i - 1) : i;
+                    }
+                }
+            }
+            private static IEnumerable<Tuple<int,int>> EnumerableTupple(IEnumerable<double> rawSign)
+            {
+                int previous = 0;
+                return IndexOfChangePoint(rawSign).Select(now => 
+                {
+                    // now must not be 0
+                    int tmp = previous; previous = now;
+                    return Tuple.Create(tmp, now);
+                });
+            }
+            private static IEnumerable<Tuple<Tuple<int,int>,double>> WaveHeight(IEnumerable<double> rawSign)
+            {
+                return EnumerableTupple(rawSign).Select(c =>
+                {
+                    //Skipで privious つの要素を飛ばして、
+                    //Takeで now つの要素を取得する
+                    int num = c.Item2 - c.Item1 + 1;
+                    var took = rawSign.Skip(c.Item1).Take(num);
+                    return Tuple.Create(c, took.Max());
+                });
+            }
+            public static IEnumerable<Tuple<int,int>> DivideWaveAtThrethold(double th, IEnumerable<double> rawSign)
+            {
+                int previous = 0;
+                return WaveHeight(rawSign).Select(now =>
+                {
+                    int tmp = 0;
+                    if (now.Item2 < th)
+                    {
+                        tmp = previous; previous = now.Item1.Item1;
+                        return Tuple.Create(tmp, now.Item1.Item2);
+                    }
+                    else
+                    {
+                        return Tuple.Create(0, 0);
+                    }
+                }).Where(c => c.Item1 != c.Item2);
+            }
+            public static double[] EfficientPass(IEnumerable<double> rawSign)
+            {
+                var first = DivideWaveAtThrethold(rawSign.Max() / 20, rawSign).First();
+                int num = first.Item2 - first.Item1 + 1;
 
+                return rawSign.Skip(first.Item1).Take(num)
+                    .ToArray();
+            }
             /// <summary>
             /// Autocorrelation function
             /// </summary>
-            public static IEnumerable<double> ACF(int divided, double[] x)
+            public static IEnumerable<double> ACF(int divided, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Length];
-                int winLength = x.Length / divided;
+                double[] ans = new double[x.Count()];
+                int winLength = x.Count() / divided;
                 // tau mean time renge
                 foreach (int tau in Enumerable.Range(1, winLength - 1))
                 {
-                    foreach(int j in Enumerable.Range(0, x.Length))
+                    foreach(int j in Enumerable.Range(0, x.Count()))
                     {
-                        if (j + tau < x.Length)
-                        {
-                            ans[tau] += x[j] * x[j + tau];
-                        }
-                        else
-                        {
-                            ans[tau] += 0.0;
-                        }
+                        ans[tau] = x.ElementAtOrDefault(j) * x.ElementAtOrDefault(j + tau);
                     }
                 }
                 return ans;
@@ -86,60 +140,60 @@ namespace DSP
             /// <summary>
             /// Autocorrelation function
             /// </summary>
-            public static double[] M_ACF(int divided, double[] x)
+            public static double[] M_ACF(int divided, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Length];
-                int winLength = x.Length / divided;
+                double[] ans = new double[x.Count()];
+                int winLength = x.Count() / divided;
                 // tau mean time renge
                 foreach (int tau in Enumerable.Range(1, winLength - 1))
                 {
                     int cursol = 0;
-                    while (cursol + tau < x.Length)
+                    while (cursol + tau < x.Count())
                     {
-                        ans[tau] += x[cursol] * x[cursol + tau];
-                        if (++cursol > x.Length) break;
+                        ans[tau] += x.ElementAt(cursol) * x.ElementAt(cursol+tau);
+                        if (++cursol > x.Count()) break;
                     }
                 }
                 return ans;
             }
-            public static IEnumerable<double> Enum_M_ACF(int divided, double[] x)
+            public static IEnumerable<double> Enum_M_ACF(int divided, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Length];
-                int winLength = x.Length / divided;
+                double[] ans = new double[x.Count()];
+                int winLength = x.Count() / divided;
                 // tau mean time renge
                 foreach (int tau in Enumerable.Range(1, winLength - 1))
                 {
                     int cursol = 0;
-                    while (cursol + tau < x.Length)
+                    while (cursol + tau < x.Count())
                     {
-                        ans[tau] += x[cursol] * x[cursol + tau];
-                        if (++cursol > x.Length) break;
+                        ans[tau] += x.ElementAt(cursol) * x.ElementAt(cursol + tau);
+                        if (++cursol > x.Count()) break;
                     }
                 }
                 int num = divided;
                 var cursor = from start in Enumerable.Range(0, num) select winLength * start;
-                var query = from inner in Enumerable.Range(1, x.Length)
-                            from outer in Enumerable.Range(1, x.Length)
+                var query = from inner in Enumerable.Range(1, x.Count())
+                            from outer in Enumerable.Range(1, x.Count())
                             select (inner * outer);
-                return Enumerable.Range(0, x.Length).
+                return Enumerable.Range(0, x.Count()).
                     Select(c =>
                     {
-                        return x[c];
+                        return x.ElementAt(c);
                     });
 
             }
-            public static double[] M_M(int divided, double[] x)
+            public static double[] M_M(int divided, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Length];
-                int winLength = x.Length / divided;
+                double[] ans = new double[x.Count()];
+                int winLength = x.Count() / divided;
                 // tau mean time renge
                 foreach (int tau in Enumerable.Range(1, winLength - 1))
                 {
-                    foreach (int j in Enumerable.Range(0, x.Length))
+                    foreach (int j in Enumerable.Range(0, x.Count()))
                     {
-                        if (j + tau < x.Length)
+                        if (j + tau < x.Count())
                         {
-                            ans[tau] += Math.Pow(x[j],2) + Math.Pow(x[j + tau],2);
+                            ans[tau] += Math.Pow(x.ElementAt(j),2) + Math.Pow(x.ElementAt(j+tau),2);
                         }
                         else
                         {
@@ -149,10 +203,10 @@ namespace DSP
                 }
                 return ans;
             }
-            public static double[] M_NSDF(int divided, double[] x)
+            public static double[] M_NSDF(int divided, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Length];
-                int winLength = x.Length / divided;
+                double[] ans = new double[x.Count()];
+                int winLength = x.Count() / divided;
                 // tau mean time renge
                 double[] ACF = M_ACF(divided, x);double[] M = M_M(divided, x);
 
@@ -162,10 +216,10 @@ namespace DSP
                 }
                 return ans;
             }
-            internal static double[] M_SDF(int divided, double[] x)
+            internal static double[] M_SDF(int divided, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Length];
-                int winLength = x.Length / divided;
+                double[] ans = new double[x.Count()];
+                int winLength = x.Count() / divided;
                 // tau mean time renge
                 double[] ACF = M_ACF(divided, x); double[] M = M_M(divided, x);
 
@@ -390,25 +444,43 @@ namespace DSP
             }
         }
     }
-    /// <summary>
-    /// for stdft(fft)
-    /// </summary>
+
     public class ComplexStaff
     {
-        private int dividedNum;     // 分割数
-        private double[] rawSign;   // 変換前の波形データ（全体）
-        private int shortLength;    // 短時間に対応するデータ数
+        private readonly int dividedNum;     // 分割数
+        private readonly double[] rawSign;   // 変換前の波形データ（全体）
+        private readonly int shortLength;    // 短時間に対応するデータ数
+        #region public
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
             this.dividedNum = dividedNum;
 
             // ハイパスに通す
-            this.rawSign = TimeDomain.Filter.HighPass(rawSign, 2000).ToArray();
-            this.rawSign = rawSign;
+            //this.rawSign = TimeDomain.Filter.HighPass(rawSign, 2000).ToArray();
+            //this.rawSign = rawSign;
 
             if (dividedNum > 0)
                 shortLength = rawSign.Length / dividedNum;
         }
+        public double[][] GetHertz(int[] rank)
+        {
+            // double[] をクエリして、IEnumerable<double[]>を生成
+            return Enumerable.Range(0, dividedNum).Select((_, index) =>
+                ShortTimeRankedHeldz(rank, index)).ToArray();
+        }
+        /*public double[] DoSTDFT(int[] rank)
+        {
+            List<double> waveform = new List<double>();
+
+            for (int timeWindow = 0; timeWindow < dividedNum; timeWindow++)
+            {
+                waveform.AddRange(InverseSTDFT(ShortTimeRankedValue(rank, timeWindow)));
+            }
+
+            return waveform.ToArray();
+        }*/
+        #endregion
+        #region private
         /// <summary>
         /// shortLength個のデータを、配列shortSignへ割り当てる。
         /// </summary>
@@ -425,44 +497,32 @@ namespace DSP
         private double[] ShortTimeRankedHeldz(int[] rank, int groupIndex)
         {
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
-            ac.FTransform(Fourier.ComplexFunc.FFT); double[] tmp = ac.GetHeldz(rank).ToArray();
+            ac.FTransform(Fourier.ComplexFunc.FFT); double[] tmp = ac.GetHertz(rank).ToArray();
             return tmp;
         }
-        private double[] ShortTimeRankedMagnitude(int[] rank, int groupIndex)
+        /*private double[] ShortTimeRankedMagnitude(int[] rank, int groupIndex)
         {
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
             ac.FTransform(Fourier.ComplexFunc.FFT);
 
             return ac.RankedMagnitude(rank).ToArray();
-        }
-        private double[] InverseSTDFT(double[] mdata)
+        }*/
+        /*private double[] InverseSTDFT(double[] mdata)
         {
             ActiveComplex ac = new ActiveComplex(mdata);
             ac.FTransform(Fourier.ComplexFunc.IFFT);
             return ac.GetReality().ToArray();
-        }
-        public double[][] GetHeldz(int[] rank)
-        {
-            List<double[]> heldz = new List<double[]>();
-            
-            for (int timeWindow = 0; timeWindow < dividedNum; timeWindow++)
-            {
-                heldz.Add(ShortTimeRankedHeldz(rank, timeWindow));
-            }
-            return heldz.ToArray();
-        }
-        public double[] DoSTDFT(int[] rank)
-        {
-            List<double> waveform = new List<double>();
-
-            for (int timeWindow = 0; timeWindow < dividedNum; timeWindow++)
-            {
-                waveform.AddRange(InverseSTDFT(ShortTimeRankedValue(rank, timeWindow)));
-            }
-
-            return waveform.ToArray();
-        }
-
+        }*/
+        /// <summary>
+        /// 短時間を割り当て、
+        /// フーリエ変換し、
+        /// ランクに該当する振幅スペクトル以外を遮断し、
+        /// 逆フーリエ変換して時間波形を得る。
+        /// ＊このまま短時間を直列に繋げると雑音が大きく、聞くに堪えない
+        /// </summary>
+        /// <param name="rank"></param>
+        /// <param name="groupIndex"></param>
+        /// <returns></returns>
         private double[] ShortTimeRankedValue(int[] rank, int groupIndex)
         {
             ActiveComplex ac = new ActiveComplex(AssignSignal(groupIndex), Fourier.WindowFunc.Hamming);
@@ -473,6 +533,7 @@ namespace DSP
 
             return ac.GetReality().ToArray();
         }
+        #endregion
     }
 
 }
