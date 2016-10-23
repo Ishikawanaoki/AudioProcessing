@@ -296,13 +296,18 @@ namespace function
             double max = double.MaxValue;
             foreach(var tmp in rank.OrderBy(t => t)) //昇順に並び替える
             {
-                while (countup++ <= tmp)
+                //Console.Write("{0}, ", max);
+                while (countup <= tmp)
                 {
                     max = GetMagnitude()
                         .Where(c => c < max).Max();
+                    //Console.Write("{0}, ", max);
+
+                    countup++;
                 }
                 yield return max;
             }
+            //Console.WriteLine();
         }
         /// <summary>
         /// 一つの時間窓での任意の順位に対する、インデックスを先頭から検索
