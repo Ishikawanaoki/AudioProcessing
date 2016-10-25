@@ -1170,9 +1170,6 @@ namespace function
 
             str.Series[area].ChartType = SeriesChartType.Line;
 
-            // 正規化を行います
-            y = myfunction.seikika(y).ToArray();
-
             for (int i = 0; i < xValues.Length; i++)
             {
                 DataPoint dp = new DataPoint();
@@ -1182,6 +1179,28 @@ namespace function
             }
 
             return plot_axis;
+        }
+        public void APlot(Chart str, double[] y, string area, string title)
+        {
+
+            str.Titles.Clear();
+            str.Series.Clear();
+            str.ChartAreas.Clear();
+
+            str.Series.Add(area);
+            str.ChartAreas.Add(new ChartArea(area));            // ChartArea作成
+            str.ChartAreas[area].AxisX.Title = "title";  // X軸タイトル設定
+            str.ChartAreas[area].AxisY.Title = "[/]";  // Y軸タイトル設定
+
+            str.Series[area].ChartType = SeriesChartType.Line;
+
+            for (int i = 0; i < y.Length; i++)
+            {
+                DataPoint dp = new DataPoint();
+                dp.SetValueXY(i.ToString(), y[i]);  //XとYの値を設定
+                dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
+                str.Series[area].Points.Add(dp);   //グラフにデータ追加
+            }
         }
         /// <summary>
         /// 任意の時系列データdataを、

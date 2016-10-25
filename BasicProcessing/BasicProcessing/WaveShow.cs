@@ -30,7 +30,7 @@ namespace BasicProcessing
         public WaveShow()
         {
             InitializeComponent();
-            rank = new int[3]{ 2,3,4};
+            rank = new int[1]{1};
         }
         /// <summary>
         /// 第１番目のウィンドウから基本呼び出される。
@@ -61,7 +61,10 @@ namespace BasicProcessing
 
             // 以下、左側のデータ列を扱う
             //左グラフには時系列、右グラフには高速フーリエ変換結果を出す
-            Plot(chart1, lDataList);
+            if (chart1_state)
+            {
+                Plot(chart1, lDataList);
+            }
 
             if (chart2_state)
             {
@@ -250,18 +253,20 @@ namespace BasicProcessing
             }
         }
         #endregion
+        private void button5_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine("ボタンが押されました。");
+            testForHertz();
+           // Plot(chart2, DSP.TimeDomain.effector.ACF(lDataList.ToArray()));
+            Console.WriteLine("アクションが終了しました。");
+        }
         private void test_button_Click(object sender, EventArgs e)
         {
             Console.WriteLine("ボタンが押されました。\n lData size : {0}",lDataList.Count());
-            testForHertz2();
+            Plot(chart2, DSP.TimeDomain.effector.ACF(lDataList.ToArray()));
             Console.WriteLine("アクションが終了しました。");
         }
-        private void button5_Click(object sender, EventArgs e)
-        {
-            Console.WriteLine("ボタンが押されました。\n lData size : {0}", lDataList.Count());
-            testForHertz();
-            Console.WriteLine("アクションが終了しました。");
-        }
+        
         private void testForHertz()
         {
             string filename = root + @"\testVer1.txt";
@@ -359,25 +364,43 @@ namespace BasicProcessing
             return list;
         }
 
+        static int cursol = 0;
+        static double[] data;
+        void init()
+        {
+            int len = 1000;
+            if (len * (cursol + 1) > lDataList.Count()) cursol = 0;
+            data = lDataList.Skip(len * cursol++).Take(len).ToArray();
+        }
+
         private void ACF_button_Click(object sender, EventArgs e)
         {
-            Plot(chart2, 
-                DSP.TimeDomain.effector.classedWaveForm(
-                    DSP.TimeDomain.effector.M_ACF(100, lDataList)).ToArray());
+            init();
+            function.File f = new function.File();
+            f.APlot(
+                chart1,
+                DSP.TimeDomain.effector.M_ACF(100, data).Take(30).ToArray(),
+                "時間", "sampleNo :" + cursol.ToString());
         }
 
         private void SDF_button_Click(object sender, EventArgs e)
         {
-            Plot(chart2,
-                DSP.TimeDomain.effector.classedWaveForm(
-                    DSP.TimeDomain.effector.M_SDF(100, lDataList)).ToArray());
+            init();
+            function.File f = new function.File();
+            f.APlot(
+                chart1,
+                DSP.TimeDomain.effector.M_SDF(100, data).Take(30).ToArray(),
+                "時間", "sampleNo :" + cursol.ToString());
         }
 
         private void NSDF_button_Click(object sender, EventArgs e)
         {
-            Plot(chart2,
-                DSP.TimeDomain.effector.classedWaveForm(
-                    DSP.TimeDomain.effector.M_NSDF(100, lDataList)).ToArray());
+            init();
+            function.File f = new function.File();
+            f.APlot(
+                chart1,
+                DSP.TimeDomain.effector.M_NSDF(100, data).Take(30).ToArray(),
+                "時間","sampleNo :"+cursol.ToString());
         }
     }
 }

@@ -9,120 +9,25 @@ namespace DSP
 {
     namespace TimeDomain
     {
-        public static class Filter
-        {
-            const int samplerate = 44100;
-            public static IEnumerable<double> HighPass(double[] str, float fs)
-            {
-                float q = (float)Math.Sqrt(0.5);
-                float omega = 2.0f * (float)Math.PI * fs / samplerate;
-                float alpha = (float)Math.Sin(omega) / (2.0f * q);
-
-                float a0 = 1.0f + alpha;
-                float a1 = -2.0f * (float)Math.Cos(omega);
-                float a2 = 1.0f - alpha;
-                float b0 = (1.0f + (float)Math.Cos(omega)) / 2.0f;
-                float b1 = -(1.0f + (float)Math.Cos(omega));
-                float b2 = (1.0f + (float)Math.Cos(omega)) / 2.0f;
-
-                float in1 = 0, in2 = 0, out1 = 0, out2 = 0;
-                var tmp = effector.GetEnumerableWave(str);
-                var tmp2 =  Enumerable.Range(0, tmp.Count()).Select(i =>{
-                    in1 = (float)tmp.ElementAtOrDefault(i - 2);
-                    in2 = (float)tmp.ElementAtOrDefault(i - 1);
-                    return b0 / a0 * tmp.ElementAtOrDefault(i) + b1 / a0 * in1 + b2 / a0 * in2;
-                });
-
-                return Enumerable.Range(0, tmp.Count()).Select(i => {
-                    out1 = (float)tmp2.ElementAtOrDefault(i + 2);
-                    out2 = (float)tmp2.ElementAtOrDefault(i + 1);
-                    return tmp2.ElementAtOrDefault(i) - a1 / a0 * out1 - a2 / a0 * out2;
-                });
-                }
-        }
         public static class effector
         {
-            public static IEnumerable<double> GetEnumerableWave(double[] x)
+            public static double[] ACF(double[] x)
             {
-                foreach (var str in x)
-                    yield return str;
-            }
-            public static IEnumerable<double> classedWaveForm(IEnumerable<double> x)
-            {
-                double unsafeValue = 0.10f;
-                bool flag = true;
-                foreach (var target in x) {
-                    if (target < unsafeValue && flag) break;
-                    else if (target < unsafeValue) flag = false;
-                    else flag = true;
-                    yield return target;
-                }
-            }
-            private static IEnumerable<int> IndexOfChangePoint(IEnumerable<double> rawSign)
-            {
-                // 全体の5/100以下の微弱な変化は無視する
-                int c_counter = 0;
-                for (int i = 0; i < rawSign.Count(); i++)
+                int length = x.Length / 10;
+                double[] y = new double[length];
+                foreach(int tau in Enumerable.Range(0, length))
                 {
-                    // first step is skipped
-                    if (i == 0) { c_counter++; continue; }
-                    // change flag with comparing
-                    if (rawSign.ElementAt(i) * rawSign.ElementAt(i-1) < 0 && c_counter < rawSign.Count() / 20)
-                    {
-                        c_counter = 0;
-                        yield return Math.Abs(rawSign.ElementAt(i-1)) > Math.Abs(rawSign.ElementAt(i-1)) ? (i - 1) : i;
-                    }
-                }
-            }
-            private static IEnumerable<Tuple<int,int>> EnumerableTupple(IEnumerable<double> rawSign)
-            {
-                int previous = 0;
-                return IndexOfChangePoint(rawSign).Select(now => 
-                {
-                    // now must not be 0
-                    int tmp = previous; previous = now;
-                    return Tuple.Create(tmp, now);
-                });
-            }
-            private static IEnumerable<Tuple<Tuple<int,int>,double>> WaveHeight(IEnumerable<double> rawSign)
-            {
-                return EnumerableTupple(rawSign).Select(c =>
-                {
-                    //Skipで privious つの要素を飛ばして、
-                    //Takeで now つの要素を取得する
-                    int num = c.Item2 - c.Item1 + 1;
-                    var took = rawSign.Skip(c.Item1).Take(num);
-                    return Tuple.Create(c, took.Max());
-                });
-            }
-            public static IEnumerable<Tuple<int,int>> DivideWaveAtThrethold(double th, IEnumerable<double> rawSign)
-            {
-                int previous = 0;
-                return WaveHeight(rawSign).Select(now =>
-                {
-                    int tmp = 0;
-                    if (now.Item2 < th)
-                    {
-                        tmp = previous; previous = now.Item1.Item1;
-                        return Tuple.Create(tmp, now.Item1.Item2);
-                    }
-                    else
-                    {
-                        return Tuple.Create(0, 0);
-                    }
-                }).Where(c => c.Item1 != c.Item2);
-            }
-            public static double[] EfficientPass(IEnumerable<double> rawSign)
-            {
-                var first = DivideWaveAtThrethold(rawSign.Max() / 20, rawSign).First();
-                int num = first.Item2 - first.Item1 + 1;
+                    y[tau] = 0;
+                    if (tau == 0) continue;
+                    double[] tmp = x.SkipWhile((val, index) => index % tau == 0).ToArray();
+                    int innerLength = length > tmp.Length ? tmp.Length : length;
 
-                return rawSign.Skip(first.Item1).Take(num)
-                    .ToArray();
+                    foreach (int j in Enumerable.Range(0, innerLength))
+                        y[tau] += x[j] * tmp[j];
+                }
+
+                return y;
             }
-            /// <summary>
-            /// Autocorrelation function
-            /// </summary>
             public static IEnumerable<double> ACF(int divided, IEnumerable<double> x)
             {
                 double[] ans = new double[x.Count()];
