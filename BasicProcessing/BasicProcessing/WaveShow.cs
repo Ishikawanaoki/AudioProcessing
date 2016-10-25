@@ -276,6 +276,9 @@ namespace BasicProcessing
                 = new function.ComplexStaff(divnum, lDataList.ToArray());
 
             double[][] heldz = ex.GetHertz(rank);
+
+            heldz = Pass(heldz);
+
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
@@ -301,6 +304,28 @@ namespace BasicProcessing
                 }
             }
             Console.WriteLine("配列を保存しました。");
+        }
+        private double[][] Pass(IEnumerable<double[]> x)
+        {
+            double[] tmp = rank.Select(c => (double)c).ToArray();
+
+            var obj = x.Select(c =>
+            {
+                return c.Select(item =>
+                {
+                    var reobj = item;
+                    foreach (double tmpt in tmp)
+                        if (item == tmpt)
+                        {
+                            reobj = 0; break;
+                        }
+
+                    tmp = c.ToArray();
+                    return reobj;
+                }).ToArray();
+            });
+
+            return obj.ToArray();
         }
         private void testForHertz2()
         {
