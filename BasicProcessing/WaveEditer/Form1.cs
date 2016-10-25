@@ -46,7 +46,11 @@ namespace WaveEditer
             int A = 10;
             EnumCount++;
             //str = str.Concat(Wave.SawtoothWave(A, 1));
+            //str = str.Concat(Wave.TriangleWave(A, 1));
+            Wave.count = 1/2
+                ;
             str = str.Concat(Wave.TriangleWave(A, 1));
+            //str = str.Concat(Wave.SinWave(A, 3000));
             label1.Text = EnumCount.ToString();
         }
     }
@@ -119,7 +123,7 @@ namespace WaveEditer
     }
     public static class Wave
     {
-        const int count = 4; // 周期]
+        public static double count = 4; // 周期]
         const int fs = 44100;
         /// <summary>
         /// get omega [rad per sec]
@@ -129,9 +133,14 @@ namespace WaveEditer
         private static IEnumerable<double> GetOneSesond()
         {
             double DivTheta = 2 * PI / fs;
-            return Enumerable.Range(0, fs).Select(c =>{
+            int num = (int)(fs * count);
+            return Enumerable.Range(0, num).Select(c =>{
                     return c * DivTheta;
                 });
+        }
+        public static IEnumerable<double> SinWave(int A, double f0)
+        {
+            return GetOneSesond().Select(c => A * Sin(c * f0));
         }
         public static IEnumerable<double> SawtoothWave(int A, double f0)
         {
