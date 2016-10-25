@@ -294,18 +294,23 @@ namespace function
         {
             int countup = 1;
             double max = double.MaxValue;
-            foreach(var tmp in rank.OrderBy(t => t)) //昇順に並び替える
-            {
-                //Console.Write("{0}, ", max);
-                while (countup <= tmp)
+            var query = GetMagnitude();
+            if (!(query.Count() > 0))
+                yield break;
+            else {
+                foreach (var tmp in rank.OrderBy(t => t)) //昇順に並び替える
                 {
-                    max = GetMagnitude()
-                        .Where(c => c < max).Max();
                     //Console.Write("{0}, ", max);
+                    while (countup <= tmp)
+                    {
+                        if (max == 0) max = double.MaxValue;
+                        max = query.Where(c => c < max).Max();
+                        //Console.Write("{0}, ", max);
 
-                    countup++;
+                        countup++;
+                    }
+                    yield return max;
                 }
-                yield return max;
             }
             //Console.WriteLine();
         }
