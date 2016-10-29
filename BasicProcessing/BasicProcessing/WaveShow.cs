@@ -404,8 +404,9 @@ namespace BasicProcessing
             function.File f = new function.File();
             f.APlot(
                 chart1,
-                DSP.TimeDomain.effector.M_ACF(100, data).Take(30).ToArray(),
-                "時間", "sampleNo :" + cursol.ToString());
+                DSP.TimeDomain.effector.M_ACF(100, data).Take(10).ToArray(),
+                "時間", "acf");
+            label2.Text = "sampleNo :" + cursol.ToString();
         }
 
         private void SDF_button_Click(object sender, EventArgs e)
@@ -414,8 +415,11 @@ namespace BasicProcessing
             function.File f = new function.File();
             f.APlot(
                 chart1,
-                DSP.TimeDomain.effector.M_SDF(100, data).Take(30).ToArray(),
-                "時間", "sampleNo :" + cursol.ToString());
+                DSP.TimeDomain.effector.M_SDF(100, data).Take(10).ToArray(),
+                "時間", "sdf");
+
+            label2.Text = "sampleNo :" + cursol.ToString();
+
         }
 
         private void NSDF_button_Click(object sender, EventArgs e)
@@ -424,8 +428,10 @@ namespace BasicProcessing
             function.File f = new function.File();
             f.APlot(
                 chart1,
-                DSP.TimeDomain.effector.M_NSDF(100, data).Take(30).ToArray(),
-                "時間","sampleNo :"+cursol.ToString());
+                DSP.TimeDomain.effector.M_NSDF(100, data).Take(10).ToArray(),
+                "時間","nsdf");
+            label2.Text = "sampleNo :" + cursol.ToString();
+
         }
     }
 }

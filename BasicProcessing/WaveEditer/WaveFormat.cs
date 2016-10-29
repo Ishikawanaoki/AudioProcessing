@@ -119,13 +119,13 @@ namespace WaveEditer
         /// if分岐が無効であれば適当な文字列でもよいです。
         /// <param name="flag"></param>
         /// <returns></returns>
-        public static DataList<short> WavReader(string args, string UniquName, Boolean flag)
+        public static DataList<short> WavReader(string UniquName)
         {
             WavHeader Header = new WavHeader();
             List<short> lDataList = new List<short>();
             List<short> rDataList = new List<short>();
 
-            using (FileStream fs = new FileStream(args, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(UniquName, FileMode.Open, FileAccess.Read))
             using (System.IO.BinaryReader br = new BinaryReader(fs))
             {
                 #region 読み込み作業
@@ -165,33 +165,6 @@ namespace WaveEditer
                 #endregion
             }
 
-
-            // trueなら、header情報の出力
-            if (flag)
-            {
-                #region flag == true
-                string tmp;
-                StreamWriter kekkaout = new StreamWriter(Staff.root + UniquName);
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.riffID);
-                kekkaout.WriteLine("riffID : " + tmp);
-                kekkaout.WriteLine(Header.size);
-                tmp = System.Text.Encoding.GetEncoding("shift_jis").GetString(Header.wavID);
-                kekkaout.WriteLine("wavID : " + tmp);
-                tmp = Encoding.GetEncoding("shift_jis").GetString(Header.fmtID);
-                kekkaout.WriteLine("fmtID : " + tmp);
-                kekkaout.WriteLine(Header.fmtSize);
-                kekkaout.WriteLine(Header.format);
-                kekkaout.WriteLine(Header.channels);
-                kekkaout.WriteLine(Header.sampleRate);
-                kekkaout.WriteLine(Header.bytePerSec);
-                kekkaout.WriteLine(Header.blockSize);
-                kekkaout.WriteLine(Header.dimBit);
-                tmp = Encoding.GetEncoding("shift_jis").GetString(Header.dataID);
-                kekkaout.WriteLine("dID : " + tmp);
-                kekkaout.WriteLine(Header.dataSize);
-                kekkaout.Close();
-                #endregion
-            }
 
             DataList<short> datalist = new DataList<short>(lDataList, rDataList, Header);
             return datalist;

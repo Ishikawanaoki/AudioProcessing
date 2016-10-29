@@ -26,9 +26,7 @@ namespace WaveEditer
 
         private void start_button_Click(object sender, EventArgs e)
         {
-            
-
-            vw.Plot(chart1,str, "hoge", "hoge");
+            vw.Plot(chart1,str, "hoge", "hoge", Wave.fs);
         }
 
         private void chart1_Click(object sender, EventArgs e)
@@ -38,20 +36,63 @@ namespace WaveEditer
 
         private void Encode_button_Click(object sender, EventArgs e)
         {
-            WaveReAndWr.DefWavWriter("mytest.wav",str);
+            int A = 1;
+            var data = WaveReAndWr.WavReader("a1.wav");
+            A = data.lDataList.Max();
+
+            WaveReAndWr.DefWavWriter("mytest.wav",str.Select(c=>A*c));
         }
+        
+        private void FFT_button_Click(object sender, EventArgs e)
+        {
+            // FFTして、振幅スペクトルを配列に格納
+            double[] y = Fourier.IEnumerableFourier.FFT(
+                Fourier.IEnumerableFourier.Windowing(str, Fourier.WindowFunc.Hamming).
+                    Select(c => new Fourier.Complex(c, 0)).ToArray()).
+                Select(c => c.magnitude).ToArray();
+
+            int length = y.Count();
+            Console.WriteLine("Length = {0}", length);
+
+            // 最大となる振幅スペクトルの大きさと、インデックスを順次一つ格納するタップル（無意味な初期化）
+            Tuple<double, int> s = Tuple.Create(0.1,0);
+            double max = 0;
+
+            foreach(int i in Enumerable.Range(0, length))
+            {
+                if(max < y[i])
+                {
+                    max = y[i];
+                    Console.WriteLine("changed {0}=>{1}", s.Item1, max);
+                    s = Tuple.Create(max, i);
+                }
+            }
+
+            label2.Text = ((double)(s.Item2 * length / Wave.fs)).ToString();
+
+            vw.Plot(chart1, y.Where((_,i)=>i<length/2), "hoge", "hoge", Wave.fs);
+        }
+
 
         private void CountUp_button_Click(object sender, EventArgs e)
         {
-            int A = 10;
-            EnumCount++;
+            EnumCount++; label1.Text = EnumCount.ToString();
             //str = str.Concat(Wave.SawtoothWave(A, 1));
             //str = str.Concat(Wave.TriangleWave(A, 1));
-            Wave.count = 1/2
-                ;
-            str = str.Concat(Wave.TriangleWave(A, 1));
-            //str = str.Concat(Wave.SinWave(A, 3000));
-            label1.Text = EnumCount.ToString();
+            //str = str.Concat(Wave.SinWave(A,1));
+            str = str.Concat(Wave.QSinWave(1, 1));
+        }
+
+        private void Triangle_button_Click(object sender, EventArgs e)
+        {
+            EnumCount++; label1.Text = EnumCount.ToString();
+            str = str.Concat(Wave.TriangleWave(1, 1));
+        }
+
+        private void Sawtoot_button_Click(object sender, EventArgs e)
+        {
+            EnumCount++; label1.Text = EnumCount.ToString();
+            str = str.Concat(Wave.SawtoothWave(1, 1));
         }
     }
     public class Viewer
@@ -91,11 +132,11 @@ namespace WaveEditer
                     x[i] = x[i - 1] + dimF;
             }
         }
-        public Axis Plot(Chart chart1,IEnumerable<double> y, string area, string title)
+        public Axis Plot(Chart chart1,IEnumerable<double> y, string area, string title, int fs)
         {
             string[] xValues = new string[y.Count()];
 
-            Axis plot_axis = new Axis(y.Count(), 44100);
+            Axis plot_axis = new Axis(y.Count(), fs);
             plot_axis.StrighAxie(ref xValues);
 
             chart1.Titles.Clear();
@@ -123,8 +164,8 @@ namespace WaveEditer
     }
     public static class Wave
     {
-        public static double count = 4; // 周期]
-        const int fs = 44100;
+        public static double count = 1; // 周期]
+        public static int fs = 100;
         /// <summary>
         /// get omega [rad per sec]
         /// return means 2nPI / fs [rad / (sec,sample)]
@@ -134,13 +175,16 @@ namespace WaveEditer
         {
             double DivTheta = 2 * PI / fs;
             int num = (int)(fs * count);
-            return Enumerable.Range(0, num).Select(c =>{
-                    return c * DivTheta;
-                });
+            return Enumerable.Range(0, num).Select(c => c * DivTheta);
         }
         public static IEnumerable<double> SinWave(int A, double f0)
         {
             return GetOneSesond().Select(c => A * Sin(c * f0));
+        }
+        public static IEnumerable<double> QSinWave(int A, double f0)
+        {
+            int length = SinWave(A, f0).Count();
+            return SinWave(A,f0).TakeWhile((val, index) => index < length / 2);
         }
         public static IEnumerable<double> SawtoothWave(int A, double f0)
         {
