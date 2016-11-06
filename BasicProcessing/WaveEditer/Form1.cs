@@ -22,11 +22,24 @@ namespace WaveEditer
             InitializeComponent();
             vw = new Viewer();
             str = Enumerable.Range(0, 1).Select(c=>c*0.1);
+
+            // プロト実行
+            Eigenvalue.CS1101.Exacute();
+            /*
+            var ar= Enumerable.Range(0, 4).Select(pivot =>{return Enumerable.Range(pivot + 1, 4 - pivot).ToArray();}).ToArray();
+
+            foreach (var item in ar)
+            {foreach (var item1 in item)
+                {Console.Write(string.Format("{0,14:F10}\t", item1) + " ");}
+                Console.WriteLine();
+            }
+            */
         }
 
         private void start_button_Click(object sender, EventArgs e)
         {
-            vw.Plot(chart1,str, "hoge", "hoge", Wave.fs);
+            testShow();
+            //vw.Plot(chart1,str.Skip(1), "hoge", "hoge", Wave.fs);
         }
 
         private void chart1_Click(object sender, EventArgs e)
@@ -34,20 +47,40 @@ namespace WaveEditer
 
         }
 
+        void testShow()
+        {
+            int length = 256;
+            var x1 //= str.Skip(1).ToArray();
+                = Enumerable.Range(0, length).Select(c => 30.0);
+
+            double[] x2 // = Fourier.IEnumerableFourier.GasussianWindow(length);
+                = Fourier.IEnumerableFourier.Window(length, Fourier.WindowFunc.Blackman).ToArray();
+
+            var Outsignal = Fourier.IEnumerableFourier.Product(
+                x1,x2
+                );
+
+            vw.Plot(chart1, Outsignal, "hoge", "hoge", Wave.fs);
+
+            //foreach (var item in x2)
+            //    Console.Write("{0},", item.ToString());
+            str = x2;
+            
+        }
         private void Encode_button_Click(object sender, EventArgs e)
         {
-            int A = 1;
-            var data = WaveReAndWr.WavReader("a1.wav");
-            A = data.lDataList.Max();
+            //int A = 1;
+            //var data = WaveReAndWr.WavReader("a1.wav");
+            //A = data.lDataList.Max();
 
-            WaveReAndWr.DefWavWriter("mytest.wav",str.Select(c=>A*c));
+            //WaveReAndWr.DefWavWriter("mytest.wav",str.Select(c=>A*c));
         }
         
         private void FFT_button_Click(object sender, EventArgs e)
         {
             // FFTして、振幅スペクトルを配列に格納
             double[] y = Fourier.IEnumerableFourier.FFT(
-                Fourier.IEnumerableFourier.Windowing(str, Fourier.WindowFunc.Hamming).
+                Fourier.IEnumerableFourier.Windowing(str.Skip(1), Fourier.WindowFunc.Hamming).
                     Select(c => new Fourier.Complex(c, 0)).ToArray()).
                 Select(c => c.magnitude).ToArray();
 
@@ -176,6 +209,13 @@ namespace WaveEditer
             double DivTheta = 2 * PI / fs;
             int num = (int)(fs * count);
             return Enumerable.Range(0, num).Select(c => c * DivTheta);
+        }
+        private static IEnumerable<double> GetOneSesond(int seconds)
+        {
+            double DivTheta = 2 * PI / fs;
+            int num = (int)(fs * seconds);
+            return Enumerable.Range(0, num).Select(c => c * DivTheta);
+
         }
         public static IEnumerable<double> SinWave(int A, double f0)
         {

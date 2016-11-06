@@ -22,7 +22,7 @@ namespace BasicProcessing
         public WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
         public readonly int[] rank;
-        public const int divnum = 2000;
+        public const int divnum = 1;
         /// <summary>
         /// 引数なしのコンストラクタは無効
         /// （フィールドは空）
