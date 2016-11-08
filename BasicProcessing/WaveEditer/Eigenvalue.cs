@@ -95,7 +95,7 @@ namespace WaveEditer
                     new double[N]{1.0,1.0,2.0,4.0}};
                 double[] x = new double[N] { 1.0, 0.0, 0.0, 0.0 };
 
-                forward_elimination(a);
+                //forward_elimination(a);
 
                 double lambda = inverse(a, x);
 

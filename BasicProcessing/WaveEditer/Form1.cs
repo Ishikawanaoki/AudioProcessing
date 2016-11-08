@@ -24,7 +24,7 @@ namespace WaveEditer
             str = Enumerable.Range(0, 1).Select(c=>c*0.1);
 
             // プロト実行
-            Eigenvalue.CS1101.Exacute();
+            //Eigenvalue.CS1101.Exacute();
             /*
             var ar= Enumerable.Range(0, 4).Select(pivot =>{return Enumerable.Range(pivot + 1, 4 - pivot).ToArray();}).ToArray();
 
@@ -38,8 +38,12 @@ namespace WaveEditer
 
         private void start_button_Click(object sender, EventArgs e)
         {
-            testShow();
-            //vw.Plot(chart1,str.Skip(1), "hoge", "hoge", Wave.fs);
+            if(EnumCount==0)
+                testShow();
+            else
+                vw.Plot(chart1,str.Skip(1), "hoge", "hoge", Wave.fs);
+
+            
         }
 
         private void chart1_Click(object sender, EventArgs e)
@@ -49,23 +53,18 @@ namespace WaveEditer
 
         void testShow()
         {
-            int length = 256;
+            int length = 2048;
             var x1 //= str.Skip(1).ToArray();
                 = Enumerable.Range(0, length).Select(c => 30.0);
 
-            double[] x2 // = Fourier.IEnumerableFourier.GasussianWindow(length);
-                = Fourier.IEnumerableFourier.Window(length, Fourier.WindowFunc.Blackman).ToArray();
+            var x2 //= Fourier.IEnumerableFourier.GasussianWindow(length);
+                 = Fourier.IEnumerableFourier.Window(length, Fourier.WindowFunc.Blackman);
 
             var Outsignal = Fourier.IEnumerableFourier.Product(
                 x1,x2
                 );
 
-            vw.Plot(chart1, Outsignal, "hoge", "hoge", Wave.fs);
-
-            //foreach (var item in x2)
-            //    Console.Write("{0},", item.ToString());
-            str = x2;
-            
+            vw.Plot(chart1, x2.Take(x2.Count()), "hoge", "hoge", Wave.fs);
         }
         private void Encode_button_Click(object sender, EventArgs e)
         {
@@ -74,18 +73,51 @@ namespace WaveEditer
             //A = data.lDataList.Max();
 
             //WaveReAndWr.DefWavWriter("mytest.wav",str.Select(c=>A*c));
+            Wave.fs = 44100; //以降の処理では、サンプルレート44100に変更
+            var tmp = Wave.GetNoteWave(27.5, 1);
+            vw.Plot(chart1, tmp, "hoge", "hoge", Wave.fs);
+            Console.WriteLine("Count ={0}", tmp.Count());
         }
         
+        private IEnumerable<double> FFT(IEnumerable<double> x)
+        {
+            return Fourier.IEnumerableFourier.FFT(
+                // 次をフーリエ変換
+                    
+                Fourier.IEnumerableFourier.Windowing(x, Fourier.WindowFunc.Hamming).
+                // 窓関数の適応
+
+                        Select(c => new Fourier.Complex(c, 0)).ToArray()).
+                // 複素数列挙型へ変換
+
+                Select(c => c.magnitude);
+                // 振幅スぺクトルへ変換
+        }
+        /*
+        private IEnumerable<double> Kaeru()
+        {
+            int[] mNote = {0,1,2,3,2,1,0,-1,
+            2,3,4,5,4,3,2,-1,
+            0,0,0,0,-1,
+            0,2,3,2,1,0};
+            double A0 = 27.5; //[Hz]
+            int T = 15; // [s]
+            int continueT = 44100 * T / mNote.Length;
+            return 
+
+
+        }
+        private IEnumerable<double> getOneMNote(int note, double A0, int continueT)
+        {
+            return Wave.SinWave(1, A0, )
+        }
+        */
         private void FFT_button_Click(object sender, EventArgs e)
         {
             // FFTして、振幅スペクトルを配列に格納
-            double[] y = Fourier.IEnumerableFourier.FFT(
-                Fourier.IEnumerableFourier.Windowing(str.Skip(1), Fourier.WindowFunc.Hamming).
-                    Select(c => new Fourier.Complex(c, 0)).ToArray()).
-                Select(c => c.magnitude).ToArray();
+            double[] y = FFT(str.Skip(1)).ToArray();
 
             int length = y.Count();
-            Console.WriteLine("Length = {0}", length);
 
             // 最大となる振幅スペクトルの大きさと、インデックスを順次一つ格納するタップル（無意味な初期化）
             Tuple<double, int> s = Tuple.Create(0.1,0);
@@ -96,14 +128,14 @@ namespace WaveEditer
                 if(max < y[i])
                 {
                     max = y[i];
-                    Console.WriteLine("changed {0}=>{1}", s.Item1, max);
                     s = Tuple.Create(max, i);
                 }
             }
 
             label2.Text = ((double)(s.Item2 * length / Wave.fs)).ToString();
 
-            vw.Plot(chart1, y.Where((_,i)=>i<length/2), "hoge", "hoge", Wave.fs);
+            vw.Plot(chart1, ClipWave(y), "hoge", "hoge", Wave.fs);
+            //ClipWave(y);
         }
 
 
@@ -126,6 +158,37 @@ namespace WaveEditer
         {
             EnumCount++; label1.Text = EnumCount.ToString();
             str = str.Concat(Wave.SawtoothWave(1, 1));
+        }
+        private IEnumerable<double> ClipWave(IEnumerable<double> x)
+        {
+            int maxI = 0;
+            double maxV = x.Max();
+
+            var a = x.Take(x.Count() / 2)
+                .Select((v, i) => new { Value = v, Index = i })
+                .Reverse()
+                .Where(c => c.Value > 1) // 無意味な情報を弾く条件
+                .Select(c =>
+                {
+                    if (c.Index > maxI) maxI = c.Index;
+                    return c;
+                })
+                .Reverse();
+
+            int cursol = 0;
+
+            foreach (var sys in a)
+                Console.WriteLine("{0}:{1}", sys.Index, sys.Value);
+
+            return Enumerable.Range(0, maxI).Select(c =>
+             {
+                 if (c == a.ElementAt(cursol).Index)
+                     return a.ElementAt(cursol++).Value;
+                 else
+                     return 0.0;
+             }
+             )
+             .Select(c=> { Console.WriteLine(c); return c; });
         }
     }
     public class Viewer
@@ -195,62 +258,5 @@ namespace WaveEditer
             return plot_axis;
         }
     }
-    public static class Wave
-    {
-        public static double count = 1; // 周期]
-        public static int fs = 100;
-        /// <summary>
-        /// get omega [rad per sec]
-        /// return means 2nPI / fs [rad / (sec,sample)]
-        /// </summary>
-        /// <returns>theta line, contains a number of items , where length times sampling frequency </returns>
-        private static IEnumerable<double> GetOneSesond()
-        {
-            double DivTheta = 2 * PI / fs;
-            int num = (int)(fs * count);
-            return Enumerable.Range(0, num).Select(c => c * DivTheta);
-        }
-        private static IEnumerable<double> GetOneSesond(int seconds)
-        {
-            double DivTheta = 2 * PI / fs;
-            int num = (int)(fs * seconds);
-            return Enumerable.Range(0, num).Select(c => c * DivTheta);
-
-        }
-        public static IEnumerable<double> SinWave(int A, double f0)
-        {
-            return GetOneSesond().Select(c => A * Sin(c * f0));
-        }
-        public static IEnumerable<double> QSinWave(int A, double f0)
-        {
-            int length = SinWave(A, f0).Count();
-            return SinWave(A,f0).TakeWhile((val, index) => index < length / 2);
-        }
-        public static IEnumerable<double> SawtoothWave(int A, double f0)
-        {
-            return GetOneSesond().Select(c =>{
-                return Enumerable.Range(1, 10)
-                    .Select(k => A / k * Sin(c * k * f0))
-                    .Sum();
-            });
-        }
-        public static IEnumerable<double> filter(IEnumerable<double> str, int A)
-        {
-            return str.Select(c =>
-            {
-                if (c > A) return A;
-                else if (c < A) return -A;
-                else return c;
-            });
-        }
-        public static IEnumerable<double> TriangleWave(int A, double f0)
-        {
-            return GetOneSesond().Select(c => {
-                return Enumerable.Range(0, 10).Select(k => {
-                    var m = 2 * k + 1; // m = 1,3,5,7,9,11,...
-                    return Pow((-1), k) * (A / Pow(m, 2)) * Sin(c * k);
-                }).Sum();
-            });
-        }
-    }
+    
 }

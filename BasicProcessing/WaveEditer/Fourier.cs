@@ -354,7 +354,8 @@ namespace Fourier
 
             int w = EnableLines(Length);
 
-            return Enumerable.Range(0, w).Select(c => Math.Exp((-1 / 2) * Math.Pow(2.5 * (2 * c - w) / w, 2)));
+            return Enumerable.Range(0, w)
+                .Select((_,index) =>Math.Exp((5*(2*index-w)/(-2*w))));
         }
         public static IEnumerable<double> Window(int length, WindowFunc windowFunc)
         {
@@ -411,10 +412,15 @@ namespace Fourier
         /// 高速フーリエ変換
         /// <param name="x"></param>
         /// <returns></returns>
+        static int pcount = 0;
+        static int ocount = 0;
         public static IEnumerable<Complex> FFT(IEnumerable<Complex> x)
         {
             int N = EnableLines(x.Count());
-            int tmp = count++;Console.WriteLine("{0}::{1}=>{2}", new string(Enumerable.Range(0, tmp).Select(c => ' ').ToArray()), N, N / 2);
+            int tmp = count++;Console.WriteLine("{0}::{1}=>{2} id ={3},{4}"
+                , new string(Enumerable.Range(0, tmp).Select(c => ' ').ToArray())
+                , N, N / 2
+                ,pcount,ocount);
 
             if (N == 1)
             {
@@ -425,23 +431,25 @@ namespace Fourier
                 var e = Enumerable.Range(0, N / 2).Select((_, index) => x.ElementAt(2 * index));
                 var d = Enumerable.Range(0, N / 2).Select((_, index) => x.ElementAt(2 * index + 1));
 
-                var D = FFT(d);
-                var E = FFT(e);
+                pcount++;
+                Complex[] D = FFT(d).ToArray();
+                ocount++;
+                Complex[] E = FFT(e).ToArray();
 
                 double d_theta = (-2) * Math.PI / N;
-                D = D.Select((val, index) => val * Complex.Polar(d_theta * index));
+                D = Enumerable.Range(0, N / 2).Select((_, index) => D[index] * Complex.Polar(d_theta * index)).ToArray();
 
                 Console.WriteLine("{0}::{1}<={2}", new string(Enumerable.Range(0, tmp).Select(c => ' ').ToArray()), N, N / 2);
 
                 return Enumerable.Range(0, N).Select((val, index) =>
                 {
                     int k = index - N / 2;
-                    if (index < N / 2) return E.ElementAt(index) + D.ElementAt(index);
-                    else return E.ElementAt(k) - D.ElementAt(k);
+                    if (index < N / 2) return E[index] + D[index];
+                    else return E[k] - D[k];
                 });
             }
         }
-        public static Complex[] sFFT(Complex[] x)
+        public static Complex[] FFT(Complex[] x)
         {
             #region out
             //初期宣言
@@ -463,8 +471,8 @@ namespace Fourier
                 e[k] = x[2 * k];
                 d[k] = x[2 * k + 1];
             }
-            D = sFFT(d);
-            E = sFFT(e);
+            D = FFT(d);
+            E = FFT(e);
             double d_theta = (-2) * Math.PI / N;
             for (k = 0; k < N / 2; k++)
             {
