@@ -125,7 +125,7 @@ namespace WaveEditer
             List<short> lDataList = new List<short>();
             List<short> rDataList = new List<short>();
 
-            using (FileStream fs = new FileStream(UniquName, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(Staff.root + UniquName, FileMode.Open, FileAccess.Read))
             using (System.IO.BinaryReader br = new BinaryReader(fs))
             {
                 #region 読み込み作業

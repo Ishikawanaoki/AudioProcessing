@@ -64,28 +64,33 @@ namespace WaveEditer
             Merge,
             Multiply
         }
+        static double tmpTheta = 0;
         private static IEnumerable<double> GetOneSesond()
         {
             double DivTheta = 2 * PI / fs;
             int num = (int)(fs * count);
-            return Enumerable.Range(0, num).Select(c => c * DivTheta);
+            var tmp =  Enumerable.Range(0, num).Select(c => c * DivTheta);
+            tmpTheta = tmp.Last();
+            return tmp;
         }
-        private static IEnumerable<double> GetOneSesond(double seconds)
+        private static IEnumerable<double> GetOneSesond(double times)
         {
             double DivTheta = 2 * PI / fs;
-            int num = (int)(fs * seconds);
-            return Enumerable.Range(0, num).Select(c => c * DivTheta);
+            int num = (int)(fs * times);
+            var tmp = Enumerable.Range(0, num).Select(c => c * DivTheta);
+            tmpTheta = tmp.Last();
+            return tmp;
         }
         /// <summary>
-        /// 1秒に対して、
+        /// 1秒に対して、particle倍時間推移したシーケンスを生成
         /// </summary>
-        /// <param name="seconds"></param>
+        /// <param name="times"></param>
         /// <param name="particle"></param>
         /// <returns></returns>
-        private static IEnumerable<double> GetOneSesondDelay(int seconds, double particle)
+        private static IEnumerable<double> GetOneSesondDelay(int times, double particle)
         {
             double DivTheta = 2 * PI / fs;
-            int num = (int)(fs * seconds);
+            int num = (int)(fs * times);
             int start = (int)(num * particle);
             return Enumerable.Range(start, num).Select(c => c * DivTheta);
 
@@ -98,23 +103,35 @@ namespace WaveEditer
         /// <param name="A">振幅は0(無入力)または1</param>
         /// <param name="num">データ数</param>
         /// <returns></returns>
-        private static IEnumerable<double> GetOneNote(double sec,double times)
+        public static IEnumerable<double> GetOneNote(int A, double fr, double sec)
         {
-            return SinWave(1, 1).Concat(
-                SinWave(2, 100));
+            if (sec < 1.0)
+            {
+                int count = (int)(fs * sec);
+                return SinWave(A, fr).Take(count);
+            }
+            else
+            {
+                int times = (int)sec;
+                int rest = (int)(sec - times);
+                return SinWave(A, fr, times).Concat(SinWave(A, fr).Take(rest));
+            }
         }
-        public static IEnumerable<double> GetNoteWave(double times, int A)
+        public static IEnumerable<double> Serialization(IEnumerable<IEnumerable<double>> x)
         {
-            return GetOneNote(0.025,times).Concat(GetOneNote(1,times))
-                .Select(c => A * Sin(c));
+            foreach (var c1 in x)
+            {
+                foreach (var c2 in c1)
+                    yield return c2;
+            }
         }
         public static IEnumerable<double> SinWave(int A, double f0)
         {
             return GetOneSesond().Select(c => A * Sin(c * f0));
         }
-        public static IEnumerable<double> SinWave(int A, double f0, int Length)
+        public static IEnumerable<double> SinWave(int A, double f0, int times)
         {//
-            return GetOneSesond().Select(c => A * Sin(c * f0));
+            return GetOneSesond(times).Select(c => A * Sin(c * f0));
         }
         public static IEnumerable<double> QSinWave(int A, double f0)
         {

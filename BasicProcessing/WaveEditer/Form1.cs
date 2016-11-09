@@ -68,17 +68,55 @@ namespace WaveEditer
         }
         private void Encode_button_Click(object sender, EventArgs e)
         {
-            //int A = 1;
-            //var data = WaveReAndWr.WavReader("a1.wav");
-            //A = data.lDataList.Max();
-
-            //WaveReAndWr.DefWavWriter("mytest.wav",str.Select(c=>A*c));
-            Wave.fs = 44100; //以降の処理では、サンプルレート44100に変更
-            var tmp = Wave.GetNoteWave(27.5, 1);
+            double[] tmp 
+                //= Wave.Serialization(Enumerable.Range(0, 10).Select((_,c) => getOnesMNote(c, 0.01)));
+                = Kaeru().ToArray();
+                //= getOnesMNote(3, 0.5);
             vw.Plot(chart1, tmp, "hoge", "hoge", Wave.fs);
-            Console.WriteLine("Count ={0}", tmp.Count());
+            Console.WriteLine("Count ={0}\n Continue", tmp.Count());
+
+
+            var data = WaveReAndWr.WavReader("a1.wav");
+            int A = data.lDataList.Max();
+            Console.WriteLine(A.ToString());
+            WaveReAndWr.DefWavWriter("mytest.wav",tmp.Select(c=>A*c));
+            Console.WriteLine("ファイル書き込み終了!!");
         }
-        
+        private IEnumerable<double> Kaeru()
+        {
+            int[] mNote = 
+            {
+                0,1,2,3,2,1,0,-1,
+                2,3,4,5,4,3,2,-1,
+                0,0,0,0,-1,
+                0,2,3,2,1,0
+            };
+
+            double T = 15; // [s]
+
+            var dimention =
+                mNote.Select(Note => getOnesMNote(Note, T / mNote.Length));
+
+            return Wave.Serialization(dimention);
+        }
+        private IEnumerable<double> getOnesMNote(int A0, double sec)
+        {
+            Wave.fs = 44100; //以降の処理では、サンプルレート44100に変更
+            double fr = 27.5 * Math.Pow(2, A0 / 12);
+            var ans = Enumerable.Range(0, 0).Select(c => 0.0);
+
+            if (A0 > 0)
+            {
+                ans = Wave.GetOneNote(1, fr, sec);
+            }
+            else
+            {
+                ans = Wave.GetOneNote(0, 1, sec);
+            }
+
+            Console.WriteLine("A0={0}, count={1}, sec={2}", A0, ans.Count(), sec);
+            return ans;
+        }
         private IEnumerable<double> FFT(IEnumerable<double> x)
         {
             return Fourier.IEnumerableFourier.FFT(
@@ -93,25 +131,6 @@ namespace WaveEditer
                 Select(c => c.magnitude);
                 // 振幅スぺクトルへ変換
         }
-        /*
-        private IEnumerable<double> Kaeru()
-        {
-            int[] mNote = {0,1,2,3,2,1,0,-1,
-            2,3,4,5,4,3,2,-1,
-            0,0,0,0,-1,
-            0,2,3,2,1,0};
-            double A0 = 27.5; //[Hz]
-            int T = 15; // [s]
-            int continueT = 44100 * T / mNote.Length;
-            return 
-
-
-        }
-        private IEnumerable<double> getOneMNote(int note, double A0, int continueT)
-        {
-            return Wave.SinWave(1, A0, )
-        }
-        */
         private void FFT_button_Click(object sender, EventArgs e)
         {
             // FFTして、振幅スペクトルを配列に格納
