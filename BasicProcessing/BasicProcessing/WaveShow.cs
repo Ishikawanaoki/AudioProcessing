@@ -23,6 +23,9 @@ namespace BasicProcessing
         private string root = @"..\..\音ファイル";
         public readonly int[] rank;
         public const int divnum = 1;
+        public double fru_base;
+        public static double fs = 44100.0;
+        public static double heldz_base = 0;
         /// <summary>
         /// 引数なしのコンストラクタは無効
         /// （フィールドは空）
@@ -65,30 +68,27 @@ namespace BasicProcessing
             {
                 Plot(chart1, lDataList);
             }
-
+            
             if (chart2_state)
             {
-                ActiveComplex acomp = new ActiveComplex(lDataList.ToArray(), function.Fourier.WindowFunc.Blackman);
+                ActiveComplex acomp = new ActiveComplex(lDataList.ToArray(), function.Fourier.WindowFunc.Hamming);
                 acomp.FTransform(function.Fourier.ComplexFunc.FFT);
-                Plot(chart2, acomp.GetMagnitude().ToArray());
+                var mag = acomp.GetMagnitude();
+                int halfL = mag.Count() / 2;
+
+
+                fru_base = mag.Take(halfL).Skip(1).Max();
+                foreach (var item in mag.Take(halfL).Skip(1).Select((c,i) => new { Index = i, Val = c }))
+                {
+                    if (item.Val >= fru_base)
+                    {
+                        heldz_base = (item.Index+1)/fs; break;
+                    }
+                }
+
+                Plot(chart2, mag.Take(halfL));
              }
-
-            //ActiveComplex acomp = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
-            //Tuple<double[], double[]> tmp = acomp.HighPassDSP(2000);
-            //Plot(chart1, tmp.Item1);
-            //Plot(chart2, tmp.Item2);
-            //ActiveComplex ac = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
-
-            //lDataList = DSP.TimeDomain.Filter.HighPass(lDataList, 2000).ToArray();
-            //ActiveComplex ac2 = new ActiveComplex(lDataList, function.Fourier.WindowFunc.Hamming);
-
-            //ac.FTransform(function.Fourier.ComplexFunc.FFT);
-            //ac2.FTransform(function.Fourier.ComplexFunc.FFT);
-
-            //Plot(chart1, ac.GetReality().ToArray());
-            //Plot(chart2, ac2.GetReality().ToArray());
-
-
+            Console.WriteLine("Max of Spectrol : {0} :{1}ms", fru_base, heldz_base*1E3 );
         }
         #region conPane
         private void WaveShow_Load(object sender, EventArgs e)
@@ -96,54 +96,6 @@ namespace BasicProcessing
 
         }
         private void WaveShow_Load_1(object sender, EventArgs e) { }
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Console.WriteLine("ボタンが押されました。");
-
-            test_Filter();
-
-            Console.WriteLine("アクションが終了しました。");
-        }
-        private void test_Filter()
-        {
-            chart1_state = true; chart2_state = true;
-
-            //Ldata
-            function.ActiveComplex ac = new function.ActiveComplex(lDataList.ToArray(), function.Fourier.WindowFunc.Hamming);
-
-            //Plot(chart1, ac.HighPassDSP(2000).ToArray());
-            //Plot(chart2, ac.LowPassDSP(2000).ToArray());
-        }
-        private void CompareWindows()
-        {
-            //testMyAnalys(2000);
-            //DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
-            //test.Execute();
-            List<Fourier.WindowFunc> func = new List<Fourier.WindowFunc>();
-            func.Add(Fourier.WindowFunc.Blackman);
-            func.Add(Fourier.WindowFunc.Hamming);
-            func.Add(Fourier.WindowFunc.Hanning);
-            func.Add(Fourier.WindowFunc.Rectangular);
-            ActiveComplex ac;
-            double[] lData; double[] rData; string filename;
-            WaveReAndWr.DataList<double> dlist;
-            foreach (function.Fourier.WindowFunc fu in func)
-            {
-                ac = new ActiveComplex(lDataList.ToArray(), fu);
-                lData = ac.FunctionTie();
-                ac = new ActiveComplex(rDataList.ToArray(), fu);
-                rData = ac.FunctionTie();
-                filename = root + @"\sound_" + fu.ToString() + ".wav";
-                dlist = new WaveReAndWr.DataList<double>(
-                        new List<double>(lData),
-                        new List<double>(rData),
-                        header);
-
-                WaveReAndWr.WavWriter(filename,
-                    function.File.ConvertDoubletoShort(dlist, 10));
-                Console.WriteLine("{0}が保存されました。", filename);
-            }
-        }
         /// <summary>
         /// 現在のchar1を保存。
         /// </summary>
@@ -259,14 +211,7 @@ namespace BasicProcessing
             testForHertz();
            // Plot(chart2, DSP.TimeDomain.effector.ACF(lDataList.ToArray()));
             Console.WriteLine("アクションが終了しました。");
-        }
-        private void test_button_Click(object sender, EventArgs e)
-        {
-            Console.WriteLine("ボタンが押されました。\n lData size : {0}",lDataList.Count());
-            Plot(chart2, DSP.TimeDomain.effector.ACF(lDataList.ToArray()));
-            Console.WriteLine("アクションが終了しました。");
-        }
-        
+        }      
         private void testForHertz()
         {
             string filename = root + @"\testVer1.txt";
@@ -305,6 +250,11 @@ namespace BasicProcessing
             }
             Console.WriteLine("配列を保存しました。");
         }
+        /// <summary>
+        /// 同じ音階を隣り合うdouble[]があった時、後方の値をゼロにする
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
         private double[][] Pass(IEnumerable<double[]> x)
         {
             double[] tmp = rank.Select(c => (double)c).ToArray();
@@ -329,7 +279,8 @@ namespace BasicProcessing
         }
         private void testForHertz2()
         {
-            string filename = root + @"\testVer2.txt";
+            DateTime dtNow = DateTime.Now; TimeSpan tsNow = dtNow.TimeOfDay;
+            string filename = root + @"\testVer"+ dtNow.Second % dtNow.Millisecond +".txt";
 
             // 短時間フーリエ変換するための格納・実行クラスの生成
             function.ComplexStaff ex
@@ -364,74 +315,201 @@ namespace BasicProcessing
         }
         private void button4_Click(object sender, EventArgs e)
         {
-            List<double> wave = getSampleWave(lDataList.Max(), 1000, 44100, 200);
+            double A = lDataList.Select(c => Math.Abs(c)).Max();
 
-            Plot(chart1, wave.ToArray());
-            Console.WriteLine("Process End");
-
-            string filename = root + @"\newwave.wav";
-
-            //function.File.Write(filename, dlist, 5);
-            WaveReAndWr.WavWriter(filename, function.File.ConvertDoubletoShort(new WaveReAndWr.DataList<double>(wave, wave, header)));
-            Console.WriteLine("{0}を保存しました", filename);
         }
-        private List<double> getSampleWave(double A, double f0, double fs, double length)
-        {
-            List<double> list = new List<double>();
-            //for (int i = 0; i < length; i++)
-            for (int n = 0; n < (length * fs); n++)
-            {
-                list.Add(
-                    //A * Math.Sin(2 * Math.PI * f0 * i / length)
-                    A * Math.Sin(2 * Math.PI * f0 * n / fs)
-                    );
-            }
-            return list;
-        }
-
         static int cursol = 0;
         static double[] data;
+        private function.File f = new function.File();
         void init()
         {
             int len = 1000;
             if (len * (cursol + 1) > lDataList.Count()) cursol = 0;
             data = lDataList.Skip(len * cursol++).Take(len).ToArray();
         }
+        private double[] tourWave(double[] x)
+        {
+            double[] differ = Enumerable.Range(0, x.Length - 1)
+                .Select(c => x[c] - x[c + 1]).ToArray();
 
+            return differ;
+        }
+        private double[] initFFT()
+        {
+            ActiveComplex ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hanning);
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            var mag = ac.GetMagnitude();
+            double max = mag.Max();
+
+            double[] ans =  mag.Take(mag.Count() / 2)
+                .Skip(1)
+                .Select(c => c/max)
+                .TakeWhile(c => c>0.01)
+                .ToArray();
+            f.APlot(
+                chart2,ans,
+                "周波数", "fft");
+
+            return ans;
+        }
+        private void initCepstrum()
+        {
+            ActiveComplex ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hamming);
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            var mag = ac.GetMagnitude();
+            var mag2 = ac.GetMagnitude().Select(c => Math.Sqrt(c));
+            double max = mag.Max();
+
+            double[] ans = mag.Take(mag.Count() / 2)
+                .Select(c => c / max)
+                .ToArray();
+
+            ac = new ActiveComplex(ans, function.Fourier.WindowFunc.Hamming);
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            mag = ac.GetMagnitude();
+            max = mag.Max();
+
+            ans = mag.Take(mag.Count() / 2)
+                .Skip(1)
+                .Select(c => c / max)
+                .TakeWhile(c => c > 0.01)
+                .ToArray();
+            f.APlot(
+                chart1, ans,
+                "周波数", "AmpCep");
+
+
+            double[] ans2 = mag2.Take(mag2.Count() / 2)
+                .Select(c => c / max)
+                .ToArray();
+
+            ac = new ActiveComplex(ans2, function.Fourier.WindowFunc.Hamming);
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            mag2 = ac.GetMagnitude();
+            max = mag2.Max();
+
+            ans = mag.Take(mag.Count() / 2)
+                .Skip(1)
+                .Select(c => c / max)
+                .ToArray();
+            f.APlot(
+                chart2, ans,
+                "周波数", "PowCep");
+        }
         private void ACF_button_Click(object sender, EventArgs e)
         {
             init();
-            function.File f = new function.File();
+            /*
+            initFFT();
             f.APlot(
                 chart1,
-                DSP.TimeDomain.effector.M_ACF(100, data).Take(10).ToArray(),
+                DSP.TimeDomain.effector.M_ACF(1, data).ToArray(),
                 "時間", "acf");
+                */
+
+            double[] mag = initFFT();
+            double[] dif = tourWave(mag);
+            f.APlot(
+                chart1, mag,
+                "周波数", "PowCep");
+            f.APlot(
+                chart2, dif,
+                "周波数", "PowCep");
+
             label2.Text = "sampleNo :" + cursol.ToString();
         }
 
         private void SDF_button_Click(object sender, EventArgs e)
         {
             init();
-            function.File f = new function.File();
-            f.APlot(
-                chart1,
-                DSP.TimeDomain.effector.M_SDF(100, data).Take(10).ToArray(),
-                "時間", "sdf");
-
+            initCepstrum();
             label2.Text = "sampleNo :" + cursol.ToString();
 
         }
 
         private void NSDF_button_Click(object sender, EventArgs e)
         {
-            init();
-            function.File f = new function.File();
+            init(); initFFT();
             f.APlot(
                 chart1,
-                DSP.TimeDomain.effector.M_NSDF(100, data).Take(10).ToArray(),
+                DSP.TimeDomain.effector.M_NSDF(1, data).ToArray(),
                 "時間","nsdf");
             label2.Text = "sampleNo :" + cursol.ToString();
 
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+        }
+        private void test_button_Click(object sender, EventArgs e)
+        {
+        }
+        private void BinaryConvert(double[] x, string argc)
+        {
+            int count = x.Length;
+            double myu_T = x.Sum() / count;
+            double max_val = 0; double max_threshold = 1;
+
+            var classA = Enumerable.Range(0, count)
+                .Select(c => x.Take(c).ToArray());
+            var classB = Enumerable.Range(0, count)
+                .Select(c => x.Skip(c).ToArray());
+
+            foreach(int i in Enumerable.Range(0, count))
+            {
+                double[] c1 = classA.ElementAt(i);
+                double[] c2 = classB.ElementAt(i);
+                int n1 = c1.Count();
+                int n2 = c2.Count();
+                double myu1 = c1.Sum() / n1;
+                double myu2 = c2.Sum() / n2;
+                double sigma1 = c1.Select(c => c * c).Sum() / n1;
+                double sigma2 = c2.Select(c => c * c).Sum() / n2;
+                double sigma_w = (n1 * sigma1 + n2 + sigma2) / (n1 + n2);
+                double sigma_B = (n1 * Math.Pow(myu1 - myu_T,2) + n2 * Math.Pow(myu2 - myu_T,2)) / (n1 + n2);
+
+                if(max_val < (sigma_B / sigma_w))
+                {
+                    max_val = sigma_B / sigma_w;
+                    max_threshold = i;
+                }
+            }
+            Console.WriteLine("{0}:閾値:{1}より周波数軸を2分できる", argc, max_threshold);
+        }
+
+        private void FFT_button_Click(object sender, EventArgs e)
+        {
+
+            init();
+            
+            ActiveComplex ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hanning);
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            var mag = ac.GetMagnitude();
+            double max = mag.Max();
+
+            double[] ans = mag.Select(c => c / max).ToArray();
+            f.APlot(
+                chart2, ans,
+                "周波数", "fft");
+
+            ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hamming);
+            ac.MusucalTransform();
+
+            mag = ac.GetMagnitude();
+            max = mag.Max();
+
+            ans = mag.Select(c => c / max).ToArray();
+            f.APlot(
+                chart1, ans,
+                "周波数", "Mfft");
+
+
+
+            label2.Text = "sampleNo :" + cursol.ToString();
         }
     }
 }

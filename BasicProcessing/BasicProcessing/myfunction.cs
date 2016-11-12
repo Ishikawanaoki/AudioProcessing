@@ -6,20 +6,6 @@ using System.Text;
 using System.Windows.Forms.DataVisualization.Charting;
 
 /// <summary>
-/// 前のプロジェクトからの名残を転々と映していたりしたため、
-/// 動的処理と静的処理がごちゃごちゃになり
-/// メソッド呼出しの煩雑さや、
-/// 処理速度の超重化が観られたため
-/// 新たな名前空間へと静的処理を移行します。
-/// 
-/// 動的処理とは！？
-/// 多くがフォーム（ウィンドウ）に関わるパーツの制御です。
-/// そのため、静的処理関数群、普遍的な表示部、内部処理決定部（本プロジェクトの主体）
-/// の3つに細分化することで完成されます。
-/// 
-/// ここまで読んでいただいた方へ
-/// 疑問点や意見があれば、ぜひ教えて頂きたいです。
-/// プロジェクト展開の助けになればと誠心誠意の対応をさせていただきます。
 /// 
 /// 目次
 ///  - 複素数クラス
@@ -42,10 +28,6 @@ using System.Windows.Forms.DataVisualization.Charting;
 ///                 考察として、
 ///                 ・ディジタルフィルタを扱うならすべて時間領域の処理となり、フーリエ変換が不必要となります。
 ///                 ・データ数が増えることでのｺﾝﾃｷｽﾄﾃﾞｯﾄﾞﾛｯｸというエラーが起こり得ますが、もっと効率の良い処理方法が必要です。
-///                 ・MEMやデータのモデル化は将来的には欲しいです。
-///         -- 一部まだ実装されていません。
-///         -- FFT関連は要素数への制限があり、呼び出す前に考慮してください。
-///         -- 上に加えて、転居による不具合があるかもしれません。
 ///  - 
 /// </summary>
 namespace function
@@ -109,40 +91,28 @@ namespace function
         }
     }
     /// <summary>
-    /// 内部処理決定部
-    /// (主要)
+    /// スペクトル解析の第一段階
+    /// 短時間に分割する。
     /// </summary>
-    public static class myfunction
-    {
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="y"></param>
-        /// <returns></returns>
-        public static IEnumerable<double> seikika(double[] y)
-        {
-            double seikika = y.Max() - y.Min();
-            foreach (double item in y)
-               yield return (item / seikika * 100);
-        }
-    }
-
     public class ComplexStaff
     {
-        private readonly int dividedNum;     // 分割数
+        private readonly int dividedNum;     // 等分割数
         private readonly double[] rawSign;   // 変換前の波形データ（全体）
-        private readonly int shortLength;    // 短時間に対応するデータ数
+        public int shortLength;    // 短時間に対応するデータ数
+        public int fs;
         #region public
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
             this.dividedNum = dividedNum;
-
-            // ハイパスに通す
-            //this.rawSign = TimeDomain.Filter.HighPass(rawSign, 2000).ToArray();
             this.rawSign = rawSign;
 
             if (dividedNum > 0)
                 shortLength = rawSign.Length / dividedNum;
+            fs = 44100;
+        }
+        public void setTimeDistance(int sec)
+        {
+            shortLength = sec < 1 ? fs % sec : fs * sec;
         }
         public double[][] GetHertz(int[] rank)
         {
@@ -445,6 +415,10 @@ namespace function
         {
             complex = Fourier.FTransform(complex.ToArray(), cfunc);
             return complex;
+        }
+        public void MusucalTransform()
+        {
+            complex = Fourier.MusicalDFT(complex.ToArray());
         }
         public double[] FunctionTie()
         {
@@ -1221,6 +1195,28 @@ namespace function
             {
                 DataPoint dp = new DataPoint();
                 dp.SetValueXY(i.ToString(), y[i]);  //XとYの値を設定
+                dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
+                str.Series[area].Points.Add(dp);   //グラフにデータ追加
+            }
+        }
+        public void FrequencyPlot(Chart str, double[] y, string area, string title, double fs)
+        {
+
+            str.Titles.Clear();
+            str.Series.Clear();
+            str.ChartAreas.Clear();
+
+            str.Series.Add(area);
+            str.ChartAreas.Add(new ChartArea(area));            // ChartArea作成
+            str.ChartAreas[area].AxisX.Title = "title";  // X軸タイトル設定
+            str.ChartAreas[area].AxisY.Title = "[f]";  // Y軸タイトル設定
+
+            str.Series[area].ChartType = SeriesChartType.Line;
+
+            int count = y.Length;
+            for (int i = 0; i < count; i++)
+            {
+                DataPoint dp = new DataPoint(i*fs/count, y[i]);
                 dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
                 str.Series[area].Points.Add(dp);   //グラフにデータ追加
             }

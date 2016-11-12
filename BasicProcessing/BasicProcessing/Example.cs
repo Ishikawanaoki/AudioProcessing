@@ -25,6 +25,48 @@ namespace BasicProcessing
                     ans[i] = 0;
                 return ans;
             }
+            /*
+            private void test_Filter()
+            {
+                chart1_state = true; chart2_state = true;
+
+                //Ldata
+                function.ActiveComplex ac = new function.ActiveComplex(lDataList.ToArray(), function.Fourier.WindowFunc.Hamming);
+
+                //Plot(chart1, ac.HighPassDSP(2000).ToArray());
+                //Plot(chart2, ac.LowPassDSP(2000).ToArray());
+            }
+            private void CompareWindows()
+            {
+                //testMyAnalys(2000);
+                //DSP.FrequencyDomein.TestPitchDetect test = new DSP.FrequencyDomein.TestPitchDetect(100, lDataList);
+                //test.Execute();
+                List<Fourier.WindowFunc> func = new List<Fourier.WindowFunc>();
+                func.Add(Fourier.WindowFunc.Blackman);
+                func.Add(Fourier.WindowFunc.Hamming);
+                func.Add(Fourier.WindowFunc.Hanning);
+                func.Add(Fourier.WindowFunc.Rectangular);
+                ActiveComplex ac;
+                double[] lData; double[] rData; string filename;
+                WaveReAndWr.DataList<double> dlist;
+                foreach (function.Fourier.WindowFunc fu in func)
+                {
+                    ac = new ActiveComplex(lDataList.ToArray(), fu);
+                    lData = ac.FunctionTie();
+                    ac = new ActiveComplex(rDataList.ToArray(), fu);
+                    rData = ac.FunctionTie();
+                    filename = root + @"\sound_" + fu.ToString() + ".wav";
+                    dlist = new WaveReAndWr.DataList<double>(
+                            new List<double>(lData),
+                            new List<double>(rData),
+                            header);
+
+                    WaveReAndWr.WavWriter(filename,
+                        function.File.ConvertDoubletoShort(dlist, 10));
+                    Console.WriteLine("{0}が保存されました。", filename);
+                }
+            }
+            */
             private List<double> getSampleWave(double A, double f0, double fs, double length)
             {
                 List<double> list = new List<double>();

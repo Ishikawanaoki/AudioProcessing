@@ -11,36 +11,34 @@ namespace DSP
     {
         public static class effector
         {
-            public static double[] ACF(double[] x)
+            public static double[] ACF(int start,int count, int wLength, IEnumerable<double> x)
             {
-                int length = x.Length / 10;
-                double[] y = new double[length];
-                foreach(int tau in Enumerable.Range(0, length))
-                {
-                    y[tau] = 0;
-                    if (tau == 0) continue;
-                    double[] tmp = x.SkipWhile((val, index) => index % tau == 0).ToArray();
-                    int innerLength = length > tmp.Length ? tmp.Length : length;
+                return Enumerable.Range(1, wLength-1)
+                     .Select(tau =>
+                     {
+                         var tmp = x        // x[0],x[1],x[2], ..., x[N]
+                         .Skip(start)    // x[start], x[start+1], ... , x[N]
+                         .Take(count)    // x[start], x[start+1], ... , x[start+count-1]
+                         .Select((val, i) =>
+                             val * x.ElementAtOrDefault(tau + i)
+                         );
+                         //Console.Write(tmp.Count() + ",  ");
+                         return tmp.Sum();
+                     }).ToArray();
 
-                    foreach (int j in Enumerable.Range(0, innerLength))
-                        y[tau] += x[j] * tmp[j];
-                }
-
-                return y;
             }
-            public static IEnumerable<double> ACF(int divided, IEnumerable<double> x)
+            public static double[] M(int start, int count, int wLength, IEnumerable<double> x)
             {
-                double[] ans = new double[x.Count()];
-                int winLength = x.Count() / divided;
-                // tau mean time renge
-                foreach (int tau in Enumerable.Range(1, winLength - 1))
-                {
-                    foreach(int j in Enumerable.Range(0, x.Count()))
-                    {
-                        ans[tau] = x.ElementAtOrDefault(j) * x.ElementAtOrDefault(j + tau);
-                    }
-                }
-                return ans;
+                return Enumerable.Range(1, wLength - 1)
+                     .Select(tau =>
+                     {
+                         return x        // x[0],x[1],x[2], ..., x[N]
+                         .Skip(start)    // x[start], x[start+1], ... , x[N]
+                         .Take(count)    // x[start], x[start+1], ... , x[start+count-1]
+                         .Select((val, i) =>
+                             Math.Pow(val, 2) * Math.Pow(x.ElementAtOrDefault(tau + i), 2)
+                         ).Sum();
+                     }).ToArray();
             }
             /// <summary>
             /// Autocorrelation function
@@ -60,32 +58,6 @@ namespace DSP
                     }
                 }
                 return ans;
-            }
-            public static IEnumerable<double> Enum_M_ACF(int divided, IEnumerable<double> x)
-            {
-                double[] ans = new double[x.Count()];
-                int winLength = x.Count() / divided;
-                // tau mean time renge
-                foreach (int tau in Enumerable.Range(1, winLength - 1))
-                {
-                    int cursol = 0;
-                    while (cursol + tau < x.Count())
-                    {
-                        ans[tau] += x.ElementAt(cursol) * x.ElementAt(cursol + tau);
-                        if (++cursol > x.Count()) break;
-                    }
-                }
-                int num = divided;
-                var cursor = from start in Enumerable.Range(0, num) select winLength * start;
-                var query = from inner in Enumerable.Range(1, x.Count())
-                            from outer in Enumerable.Range(1, x.Count())
-                            select (inner * outer);
-                return Enumerable.Range(0, x.Count()).
-                    Select(c =>
-                    {
-                        return x.ElementAt(c);
-                    });
-
             }
             public static double[] M_M(int divided, IEnumerable<double> x)
             {
@@ -117,7 +89,7 @@ namespace DSP
 
                 foreach (int tau in Enumerable.Range(1, winLength - 1))
                 {
-                    ans[tau] = M[tau] - 2 * ACF[tau];
+                    ans[tau] = 2 * ACF[tau] / M[tau];
                 }
                 return ans;
             }
@@ -130,7 +102,7 @@ namespace DSP
 
                 foreach (int tau in Enumerable.Range(1, winLength - 1))
                 {
-                    ans[tau] = 2 * ACF[tau] / M[tau];
+                    ans[tau] = M[tau] - 2 * ACF[tau];
                 }
                 return ans;
             }

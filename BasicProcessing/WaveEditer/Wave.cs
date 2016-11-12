@@ -117,6 +117,34 @@ namespace WaveEditer
                 return SinWave(A, fr, times).Concat(SinWave(A, fr).Take(rest));
             }
         }
+        public static IEnumerable<double> GetOneNoteS(int A, double fr, double sec)
+        {
+            if (sec < 1.0)
+            {
+                int count = (int)(fs * sec);
+                return SawtoothWave(A, fr).Take(count);
+            }
+            else
+            {
+                int times = (int)sec;
+                int rest = (int)(sec - times);
+                return SawtoothWave(A, fr, times).Concat(SawtoothWave(A, fr).Take(rest));
+            }
+        }
+        public static IEnumerable<double> GetOneNoteT(int A, double fr, double sec)
+        {
+            if (sec < 1.0)
+            {
+                int count = (int)(fs * sec);
+                return TriangleWave(A, fr).Take(count);
+            }
+            else
+            {
+                int times = (int)sec;
+                int rest = (int)(sec - times);
+                return TriangleWave(A, fr, times).Concat(TriangleWave(A, fr).Take(rest));
+            }
+        }
         public static IEnumerable<double> Serialization(IEnumerable<IEnumerable<double>> x)
         {
             foreach (var c1 in x)
@@ -146,6 +174,14 @@ namespace WaveEditer
                     .Sum();
             });
         }
+        public static IEnumerable<double> SawtoothWave(int A, double f0, int times)
+        {
+            return GetOneSesond(times).Select(c => {
+                return Enumerable.Range(1, 10)
+                    .Select(k => A / k * Sin(c * k * f0))
+                    .Sum();
+            });
+        }
         public static IEnumerable<double> filter(IEnumerable<double> str, int A)
         {
             return str.Select(c =>
@@ -158,6 +194,15 @@ namespace WaveEditer
         public static IEnumerable<double> TriangleWave(int A, double f0)
         {
             return GetOneSesond().Select(c => {
+                return Enumerable.Range(0, 10).Select(k => {
+                    var m = 2 * k + 1; // m = 1,3,5,7,9,11,...
+                    return Pow((-1), k) * (A / Pow(m, 2)) * Sin(c * k);
+                }).Sum();
+            });
+        }
+        public static IEnumerable<double> TriangleWave(int A, double f0, int times)
+        {
+            return GetOneSesond(times).Select(c => {
                 return Enumerable.Range(0, 10).Select(k => {
                     var m = 2 * k + 1; // m = 1,3,5,7,9,11,...
                     return Pow((-1), k) * (A / Pow(m, 2)) * Sin(c * k);

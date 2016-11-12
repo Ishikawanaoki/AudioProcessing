@@ -266,7 +266,14 @@ namespace WaveEditer
                     {
                         try
                         {
-                            tmp = Convert.ToUInt16(query.ElementAtOrDefault(i));
+                            short stmp = 0; double dtmp = query.ElementAtOrDefault(i);
+                            if (dtmp > short.MaxValue)
+                                stmp = short.MaxValue - 1;
+                            else stmp = Convert.ToInt16(dtmp);
+
+                            //Byte[] bin = BitConverter.GetBytes(stmp); // signed 16 bit
+                            tmp = BitConverter.ToUInt16(BitConverter.GetBytes(stmp), 0);     // unsigned 16 bit
+                            //Console.WriteLine("{0}=>{1}=>{2}", dtmp.ToString(), stmp.ToString(), tmp.ToString());
                         }
                         catch (FormatException e)
                         {
@@ -275,6 +282,10 @@ namespace WaveEditer
                         catch (OverflowException e)
                         {
                             Console.WriteLine("The number cannot fit in an Int32.");
+                        }
+                        catch (ArgumentNullException e)
+                        {
+                            Console.WriteLine("Byte[] bin is null. ");
                         }
 
                         bw.Write(tmp);

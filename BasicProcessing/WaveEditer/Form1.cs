@@ -68,21 +68,27 @@ namespace WaveEditer
         }
         private void Encode_button_Click(object sender, EventArgs e)
         {
-            double[] tmp 
-                //= Wave.Serialization(Enumerable.Range(0, 10).Select((_,c) => getOnesMNote(c, 0.01)));
-                = Kaeru().ToArray();
-                //= getOnesMNote(3, 0.5);
-            vw.Plot(chart1, tmp, "hoge", "hoge", Wave.fs);
-            Console.WriteLine("Count ={0}\n Continue", tmp.Count());
+            //var tmp 
+            //= Wave.Serialization(Enumerable.Range(0, 10).Select((_,c) => getOnesMNote(c, 0.01)));
+            //= Kaeru(30, 3);
+            //= getOnesMNote(3, 0.5);
+            //vw.Plot(chart1, tmp, "hoge", "hoge", Wave.fs);
+            //Console.WriteLine("Count ={0}\n Continue", tmp.Count());
+
+            //var data = WaveReAndWr.WavReader("a1.wav");
+            //int A = data.lDataList.Max();
+            //Console.WriteLine(A.ToString());
+            //WaveReAndWr.DefWavWriter("mytest_t.wav",tmp.Select(c=>A*c).ToArray());
 
 
-            var data = WaveReAndWr.WavReader("a1.wav");
-            int A = data.lDataList.Max();
-            Console.WriteLine(A.ToString());
-            WaveReAndWr.DefWavWriter("mytest.wav",tmp.Select(c=>A*c));
+            var tmp = Kaeru(30, 3);
+
+            WaveReAndWr.DefWavWriter("mytest_t.wav", tmp.Select(c => (short.MaxValue / 2) * c).ToArray());
+
+
             Console.WriteLine("ファイル書き込み終了!!");
         }
-        private IEnumerable<double> Kaeru()
+        private IEnumerable<double> Kaeru(int T, int select)
         {
             int[] mNote = 
             {
@@ -92,14 +98,29 @@ namespace WaveEditer
                 0,2,3,2,1,0
             };
 
-            double T = 15; // [s]
-
             var dimention =
-                mNote.Select(Note => getOnesMNote(Note, T / mNote.Length));
+                mNote.Select(Note => getOnesMNote(Note, T / mNote.Length, select));
 
             return Wave.Serialization(dimention);
         }
-        private IEnumerable<double> getOnesMNote(int A0, double sec)
+        private IEnumerable<ushort> ConvertDoubleToUInt16(IEnumerable<double> x)
+        {
+            return x.Select(c =>
+            {
+                short stmp = 0; double dtmp = c;
+                if (dtmp > short.MaxValue / 2) stmp = short.MaxValue / 2 - 1;
+                else stmp = Convert.ToInt16(dtmp);
+
+                return BitConverter.ToUInt16(BitConverter.GetBytes(stmp), 0); ;
+            });
+        }
+        private IEnumerable<double> ChangeRange(IEnumerable<double> x)
+        {
+            double max = x.Max();
+            double min = x.Min(); min = min < 0 ? min : 0;
+            return x.Select(c => c / (max + min) * (short.MaxValue / 2));
+        }
+        private IEnumerable<double> getOnesMNote(int A0, double sec, int select)
         {
             Wave.fs = 44100; //以降の処理では、サンプルレート44100に変更
             double fr = 27.5 * Math.Pow(2, A0 / 12);
@@ -107,14 +128,35 @@ namespace WaveEditer
 
             if (A0 > 0)
             {
-                ans = Wave.GetOneNote(1, fr, sec);
+                switch (select) {
+                    case 1:
+                        ans = Wave.GetOneNote(1, fr, sec);
+                        break;
+                    case 2:
+                        ans = Wave.GetOneNoteS(1, fr, sec);
+                        break;
+                    case 3:
+                        ans = Wave.GetOneNoteT(1, fr, sec);
+                        break;
+                }
             }
             else
             {
-                ans = Wave.GetOneNote(0, 1, sec);
+                switch (select)
+                {
+                    case 1:
+                        ans = Wave.GetOneNote(0, 1, sec);
+                        break;
+                    case 2:
+                        ans = Wave.GetOneNoteS(0, 1, sec);
+                        break;
+                    case 3:
+                        ans = Wave.GetOneNoteT(0, 1, sec);
+                        break;
+                }
             }
 
-            Console.WriteLine("A0={0}, count={1}, sec={2}", A0, ans.Count(), sec);
+            //Console.WriteLine("A0={0}, count={1}, sec={2}", A0, ans.Count(), sec);
             return ans;
         }
         private IEnumerable<double> FFT(IEnumerable<double> x)
