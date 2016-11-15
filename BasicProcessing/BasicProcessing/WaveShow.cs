@@ -22,7 +22,7 @@ namespace BasicProcessing
         public WaveReAndWr.WavHeader header;
         private string root = @"..\..\音ファイル";
         public readonly int[] rank;
-        public const int divnum = 1;
+        public const int divnum = 200;
         public double fru_base;
         public static double fs = 44100.0;
         public static double heldz_base = 0;
@@ -33,7 +33,7 @@ namespace BasicProcessing
         public WaveShow()
         {
             InitializeComponent();
-            rank = new int[1]{1};
+            rank = new int[3]{1,2,3};
         }
         /// <summary>
         /// 第１番目のウィンドウから基本呼び出される。
@@ -220,9 +220,13 @@ namespace BasicProcessing
             function.ComplexStaff ex
                 = new function.ComplexStaff(divnum, lDataList.ToArray());
 
+            ex.fs = 44100;
+            ex.mergin = 50;
+            //ex.setTimeDistance(20 / 100);
+
             double[][] heldz = ex.GetHertz(rank);
 
-            heldz = Pass(heldz);
+            //heldz = Pass(heldz);
 
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
@@ -276,42 +280,6 @@ namespace BasicProcessing
             });
 
             return obj.ToArray();
-        }
-        private void testForHertz2()
-        {
-            DateTime dtNow = DateTime.Now; TimeSpan tsNow = dtNow.TimeOfDay;
-            string filename = root + @"\testVer"+ dtNow.Second % dtNow.Millisecond +".txt";
-
-            // 短時間フーリエ変換するための格納・実行クラスの生成
-            function.ComplexStaff ex
-                = new function.ComplexStaff(divnum, lDataList.ToArray());
-
-            double[][] heldz = ex.GetHertz2(rank);
-            using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
-            {
-                using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
-                {
-                    foreach (double[] str in heldz)
-                    {
-                        int length = str.Length - 1;
-                        #region changed 201610111559
-                        foreach (double data in str)
-                        {
-                            //sw.Write(data + ",");
-                            sw.Write(data);
-                            if (length-- > 0)
-                                sw.Write(",");
-                            else
-                                sw.WriteLine();
-                            Console.Write("{0},", data);
-                        }
-                        //Console.WriteLine("");
-                        #endregion
-
-                    }
-                }
-            }
-            Console.WriteLine("配列を保存しました。");
         }
         private void button4_Click(object sender, EventArgs e)
         {

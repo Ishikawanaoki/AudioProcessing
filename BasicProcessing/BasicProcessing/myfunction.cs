@@ -96,10 +96,11 @@ namespace function
     /// </summary>
     public class ComplexStaff
     {
-        private readonly int dividedNum;     // 等分割数
+        private int dividedNum;     // 等分割数
         private readonly double[] rawSign;   // 変換前の波形データ（全体）
         public int shortLength;    // 短時間に対応するデータ数
-        public int fs;
+        public int fs = 44100;
+        public int mergin = 50; // 短時間窓の重なり(%)
         #region public
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
@@ -108,61 +109,98 @@ namespace function
 
             if (dividedNum > 0)
                 shortLength = rawSign.Length / dividedNum;
-            fs = 44100;
         }
-        public void setTimeDistance(int sec)
+        /// <summary>
+        /// 常に任意時間の時間窓を切り出す
+        /// </summary>
+        /// <param name="sec"></param>
+        public void setTimeDistance(double sec)
         {
-            shortLength = sec < 1 ? fs % sec : fs * sec;
+            shortLength = sec > 1 ? (int)(fs % sec) : (int)(fs * sec);
+            dividedNum = 0;
         }
         public double[][] GetHertz(int[] rank)
         {
             // double[] をクエリして、IEnumerable<double[]>を生成
-            return Enumerable.Range(0, dividedNum).Select((_, index) =>
-                ShortTimeRankedHeldzInSame(rank, index)).ToArray();
-        }
-        public double[][] GetHertz2(int[] rank)
-        {
-            // double[] をクエリして、IEnumerable<double[]>を生成
-            return Enumerable.Range(0, TimeDomain.GetEfficientCount(rawSign)).Select((_, index) =>
-                ShortTimeRankedHeldzInDR(rank, index)).ToArray();
+            return Enumerable
+                .Range(0, rawSign.Length % shortLength)
+                .Select((_, gindex) =>
+                    ShortTimeRankedHeldz(rank, gindex))
+                .ToArray();
         }
         #endregion
-        #region private
         /// <summary>
         /// shortLength個のデータを、配列shortSignへ割り当てる。
+        ///  + マージンを考慮し、時間的重なりを追加。
+        ///  0 < mergin
+        ///  
         /// </summary>
         /// <param name="groupIndex"></param>
         /// <param name="sign"></param>
         private double[] AssignSignalInSame(int groupIndex)
         {
-            // 短時間に分割
-            double[] shortSign = new double[shortLength];
-            Array.Copy(rawSign, groupIndex * shortLength, shortSign, 0, shortLength);
+            if(groupIndex < 1) return new double[0];
 
-            return shortSign;
+            if (groupIndex == 1)
+            {
+                return rawSign.Take(shortLength).ToArray();
+            }
+            else
+            {
+                return rawSign.Skip(shortLength * (groupIndex - 1) + shortLength / 100 * mergin)
+                    .Take(shortLength).ToArray();
+            }
         }
-        private double[] AssignSignalInDefferRange(int groupIndex)
-        {
-            return TimeDomain.GetFixWave(rawSign, groupIndex).ToArray();
-        }
-        private double[] ShortTimeRankedHeldzInSame(int[] rank, int groupIndex)
+        private double[] ShortTimeRankedHeldz(int[] rank, int groupIndex)
         {
             ActiveComplex ac = new ActiveComplex(AssignSignalInSame(groupIndex), Fourier.WindowFunc.Hamming);
-            ac.FTransform(Fourier.ComplexFunc.FFT);
-            return ac.GetHertz(rank).ToArray();
-        }
-        private double[] ShortTimeRankedHeldzInDR(int[] rank, int groupIndex)
-        {
-            //Console.Write("{0},", groupIndex);
-            ActiveComplex ac = new ActiveComplex(AssignSignalInDefferRange(groupIndex), Fourier.WindowFunc.Hamming);
-            ac.FTransform(Fourier.ComplexFunc.FFT);
+            
+            //ac.FTransform(Fourier.ComplexFunc.FFT);
+
+            ac.MusucalTransform();
+
             if (ac.isContain())
             {
                 return ac.GetHertz(rank).ToArray();
             }
-            else { return new double[shortLength]; }
+            else
+            {
+                return new double[rank.Length];
+            }
         }
-        #endregion
+        class WaveTrail
+        {
+            double sikii = 0.8;
+            double[] ndata;
+            public WaveTrail(double[] x)
+            {
+                double amp = x.Max() -  x.Min();
+                if (amp <= 0)
+                {
+                    ndata = new double[0];
+                }
+                else
+                {
+                    ndata = x.Select(c => c / amp).ToArray();
+                }
+            }
+            public int[] pzeroCrossIndex()
+            {
+                List<int> ans = new List<int>();
+                for(int i=0; i<ndata.Length; i++)
+                {
+                    if (i == 0) continue;
+                    if(ndata[i] * ndata[i-1] < 0)
+                    {
+                        int point = Math.Abs(ndata[i]) > Math.Abs(ndata[i - 1]) ? i - 1 : i;
+                        ans.Add(point);
+                    }
+                }
+                // not implemment
+                return ans.ToArray();
+            }
+        }
+
         static class TimeDomain
         {
             private static IEnumerable<int> IndexOfChangepoint(double[] rawSign)
@@ -267,22 +305,19 @@ namespace function
             var query = GetMagnitude();
             if (!(query.Count() > 0))
                 yield break;
-            else {
+            else
+            {
                 foreach (var tmp in rank.OrderBy(t => t)) //昇順に並び替える
                 {
-                    //Console.Write("{0}, ", max);
                     while (countup <= tmp)
                     {
                         if (max == 0) max = double.MaxValue;
                         max = query.Where(c => c < max).Max();
-                        //Console.Write("{0}, ", max);
-
                         countup++;
                     }
                     yield return max;
                 }
             }
-            //Console.WriteLine();
         }
         /// <summary>
         /// 一つの時間窓での任意の順位に対する、インデックスを先頭から検索
