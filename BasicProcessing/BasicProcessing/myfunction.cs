@@ -96,7 +96,6 @@ namespace function
     /// </summary>
     public class ComplexStaff
     {
-        private int dividedNum;     // 等分割数
         private readonly double[] rawSign;   // 変換前の波形データ（全体）
         public int shortLength;    // 短時間に対応するデータ数
         public int fs = 44100;
@@ -104,7 +103,6 @@ namespace function
         #region public
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
-            this.dividedNum = dividedNum;
             this.rawSign = rawSign;
 
             if (dividedNum > 0)
@@ -116,8 +114,8 @@ namespace function
         /// <param name="sec"></param>
         public void setTimeDistance(double sec)
         {
-            shortLength = sec > 1 ? (int)(fs % sec) : (int)(fs * sec);
-            dividedNum = 0;
+            shortLength = (int)(fs * sec);
+            if (shortLength <= 0) shortLength = rawSign.Length;
         }
         public double[][] GetHertz(int[] rank)
         {
@@ -126,6 +124,14 @@ namespace function
                 .Range(0, rawSign.Length % shortLength)
                 .Select((_, gindex) =>
                     ShortTimeRankedHeldz(rank, gindex))
+                .ToArray();
+        }
+        public double[][] GetMusicalNote(int[] rank)
+        {
+            return Enumerable
+                .Range(0, rawSign.Length % shortLength)
+                .Select((_, gindex) =>
+                    ShortTimeRankedNote(rank, gindex))
                 .ToArray();
         }
         #endregion
@@ -154,53 +160,56 @@ namespace function
         private double[] ShortTimeRankedHeldz(int[] rank, int groupIndex)
         {
             ActiveComplex ac = new ActiveComplex(AssignSignalInSame(groupIndex), Fourier.WindowFunc.Hamming);
-            
-            //ac.FTransform(Fourier.ComplexFunc.FFT);
-
-            ac.MusucalTransform();
 
             if (ac.isContain())
             {
+                ac.FTransform(Fourier.ComplexFunc.FFT);
                 return ac.GetHertz(rank).ToArray();
+
             }
             else
             {
                 return new double[rank.Length];
             }
         }
-        class WaveTrail
+        private IEnumerable<Tuple<int, double>> GetTuple(double[] x)
         {
-            double sikii = 0.8;
-            double[] ndata;
-            public WaveTrail(double[] x)
+            foreach(var item in x.Select((val, i) => new {Val =val, Index = i }))
             {
-                double amp = x.Max() -  x.Min();
-                if (amp <= 0)
-                {
-                    ndata = new double[0];
-                }
-                else
-                {
-                    ndata = x.Select(c => c / amp).ToArray();
-                }
-            }
-            public int[] pzeroCrossIndex()
-            {
-                List<int> ans = new List<int>();
-                for(int i=0; i<ndata.Length; i++)
-                {
-                    if (i == 0) continue;
-                    if(ndata[i] * ndata[i-1] < 0)
-                    {
-                        int point = Math.Abs(ndata[i]) > Math.Abs(ndata[i - 1]) ? i - 1 : i;
-                        ans.Add(point);
-                    }
-                }
-                // not implemment
-                return ans.ToArray();
+                yield return Tuple.Create(item.Index, item.Val);
             }
         }
+        private IEnumerable<int> GetOrderedIndex(double[] x)
+        {
+            var tuple = GetTuple(x);
+            var ordered = tuple.OrderByDescending(c => c.Item2);
+            return ordered.Select(c => c.Item1);
+        }
+        private double[] ShortTimeRankedNote(int[] rank, int groupIndex)
+        {
+            ActiveComplex ac = new ActiveComplex(AssignSignalInSame(groupIndex), Fourier.WindowFunc.Hamming);
 
+            if (ac.isContain())
+            {
+                ac.MusucalTransform();
+                double[] mag = ac.GetMagnitude().ToArray();
+
+                int[] orderdIndex = GetOrderedIndex(mag)
+                    .Take(rank.Max())
+                    .Skip(rank.Min())
+                    .ToArray();
+
+                return orderdIndex.Select(c => 27.5 * Math.Pow(2, c / 12))
+                    .Select(c => otherUser.Music.OneMusicalScale(c))
+                    .ToArray();
+
+            }
+            else
+            {
+                return new double[rank.Length];
+            }
+        }
+        
         static class TimeDomain
         {
             private static IEnumerable<int> IndexOfChangepoint(double[] rawSign)

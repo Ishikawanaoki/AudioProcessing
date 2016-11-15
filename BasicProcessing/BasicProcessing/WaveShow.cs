@@ -211,7 +211,50 @@ namespace BasicProcessing
             testForHertz();
            // Plot(chart2, DSP.TimeDomain.effector.ACF(lDataList.ToArray()));
             Console.WriteLine("アクションが終了しました。");
-        }      
+        }
+        private void testForHertzOnlyNote()
+        {
+            string filename = root + @"\testVer1.txt";
+
+            // 短時間フーリエ変換するための格納・実行クラスの生成
+            function.ComplexStaff ex
+                = new function.ComplexStaff(divnum, lDataList.ToArray());
+
+            ex.fs = 44100;
+            ex.mergin = 50;
+            ex.setTimeDistance(0.02);
+            //ex.setTimeDistance(20 / 100);
+
+            double[][] heldz = ex.GetMusicalNote(rank);
+
+            //heldz = Pass(heldz);
+
+            using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
+            {
+                using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
+                {
+                    foreach (double[] str in heldz)
+                    {
+                        int length = str.Length - 1;
+                        #region changed 201610111559
+                        foreach (double data in str)
+                        {
+                            //sw.Write(data + ",");
+                            sw.Write(data);
+                            if (length-- > 0)
+                                sw.Write(",");
+                            else
+                                sw.WriteLine();
+                            Console.Write("{0},", data);
+                        }
+                        //Console.WriteLine("");
+                        #endregion
+
+                    }
+                }
+            }
+            Console.WriteLine("配列を保存しました。");
+        }
         private void testForHertz()
         {
             string filename = root + @"\testVer1.txt";
@@ -222,6 +265,7 @@ namespace BasicProcessing
 
             ex.fs = 44100;
             ex.mergin = 50;
+            ex.setTimeDistance(0.02);
             //ex.setTimeDistance(20 / 100);
 
             double[][] heldz = ex.GetHertz(rank);
@@ -414,6 +458,8 @@ namespace BasicProcessing
         }
         private void test_button_Click(object sender, EventArgs e)
         {
+
+            testForHertzOnlyNote();
         }
         private void BinaryConvert(double[] x, string argc)
         {
