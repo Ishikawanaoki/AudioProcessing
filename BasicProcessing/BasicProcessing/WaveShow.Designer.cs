@@ -47,8 +47,10 @@
             this.SDF_button = new System.Windows.Forms.Button();
             this.NSDF_button = new System.Windows.Forms.Button();
             this.FFT_button = new System.Windows.Forms.Button();
+            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
             // 
             // chart1
@@ -138,6 +140,7 @@
             // 
             // button4
             // 
+            this.button4.Enabled = false;
             this.button4.Location = new System.Drawing.Point(543, 337);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(75, 23);
@@ -196,11 +199,20 @@
             this.FFT_button.UseVisualStyleBackColor = true;
             this.FFT_button.Click += new System.EventHandler(this.FFT_button_Click);
             // 
+            // numericUpDown1
+            // 
+            this.numericUpDown1.Location = new System.Drawing.Point(613, 128);
+            this.numericUpDown1.Name = "numericUpDown1";
+            this.numericUpDown1.Size = new System.Drawing.Size(31, 19);
+            this.numericUpDown1.TabIndex = 15;
+            this.numericUpDown1.ValueChanged += new System.EventHandler(this.numericUpDown1_ValueChanged);
+            // 
             // WaveShow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(715, 368);
+            this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.FFT_button);
             this.Controls.Add(this.NSDF_button);
             this.Controls.Add(this.SDF_button);
@@ -219,6 +231,7 @@
             this.Load += new System.EventHandler(this.WaveShow_Load_1);
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -239,5 +252,6 @@
         private System.Windows.Forms.Button SDF_button;
         private System.Windows.Forms.Button NSDF_button;
         private System.Windows.Forms.Button FFT_button;
+        private System.Windows.Forms.NumericUpDown numericUpDown1;
     }
 }

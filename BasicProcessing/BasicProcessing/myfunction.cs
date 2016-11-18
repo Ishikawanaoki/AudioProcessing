@@ -98,8 +98,8 @@ namespace function
     {
         private readonly double[] rawSign;   // 変換前の波形データ（全体）
         public int shortLength;    // 短時間に対応するデータ数
-        public int fs = 44100;
-        public int mergin = 50; // 短時間窓の重なり(%)
+        public static int fs = 44100;
+        public static int mergin = 50; // 短時間窓の重なり(%)
         #region public
         public ComplexStaff(int dividedNum, double[] rawSign)
         {
@@ -172,14 +172,14 @@ namespace function
                 return new double[rank.Length];
             }
         }
-        private IEnumerable<Tuple<int, double>> GetTuple(double[] x)
+        public static IEnumerable<Tuple<int, double>> GetTuple(double[] x)
         {
             foreach(var item in x.Select((val, i) => new {Val =val, Index = i }))
             {
                 yield return Tuple.Create(item.Index, item.Val);
             }
         }
-        private IEnumerable<int> GetOrderedIndex(double[] x)
+        public static IEnumerable<int> GetOrderedIndex(double[] x)
         {
             var tuple = GetTuple(x);
             var ordered = tuple.OrderByDescending(c => c.Item2);
@@ -194,10 +194,21 @@ namespace function
                 ac.MusucalTransform();
                 double[] mag = ac.GetMagnitude().ToArray();
 
-                int[] orderdIndex = GetOrderedIndex(mag)
+                int[] orderdIndex = new int[0];
+                if (rank.Length > 1)
+                {
+                    orderdIndex = GetOrderedIndex(mag)
                     .Take(rank.Max())
                     .Skip(rank.Min())
                     .ToArray();
+                }
+                else
+                {
+                    orderdIndex = GetOrderedIndex(mag)
+                    .Take(rank.Max())
+                    .ToArray();
+                }
+                
 
                 return orderdIndex.Select(c => 27.5 * Math.Pow(2, c / 12))
                     .Select(c => otherUser.Music.OneMusicalScale(c))
@@ -1223,14 +1234,13 @@ namespace function
         }
         public void APlot(Chart str, double[] y, string area, string title)
         {
-
             str.Titles.Clear();
             str.Series.Clear();
             str.ChartAreas.Clear();
 
             str.Series.Add(area);
             str.ChartAreas.Add(new ChartArea(area));            // ChartArea作成
-            str.ChartAreas[area].AxisX.Title = "title";  // X軸タイトル設定
+            str.ChartAreas[area].AxisX.Title = title;  // X軸タイトル設定
             str.ChartAreas[area].AxisY.Title = "[/]";  // Y軸タイトル設定
 
             str.Series[area].ChartType = SeriesChartType.Line;
@@ -1239,28 +1249,6 @@ namespace function
             {
                 DataPoint dp = new DataPoint();
                 dp.SetValueXY(i.ToString(), y[i]);  //XとYの値を設定
-                dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
-                str.Series[area].Points.Add(dp);   //グラフにデータ追加
-            }
-        }
-        public void FrequencyPlot(Chart str, double[] y, string area, string title, double fs)
-        {
-
-            str.Titles.Clear();
-            str.Series.Clear();
-            str.ChartAreas.Clear();
-
-            str.Series.Add(area);
-            str.ChartAreas.Add(new ChartArea(area));            // ChartArea作成
-            str.ChartAreas[area].AxisX.Title = "title";  // X軸タイトル設定
-            str.ChartAreas[area].AxisY.Title = "[f]";  // Y軸タイトル設定
-
-            str.Series[area].ChartType = SeriesChartType.Line;
-
-            int count = y.Length;
-            for (int i = 0; i < count; i++)
-            {
-                DataPoint dp = new DataPoint(i*fs/count, y[i]);
                 dp.IsValueShownAsLabel = false;  //グラフに値を表示しないように指定
                 str.Series[area].Points.Add(dp);   //グラフにデータ追加
             }

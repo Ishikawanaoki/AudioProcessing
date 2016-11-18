@@ -62,7 +62,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DSP_Class.cs" />
-    <Compile Include="Example.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -70,7 +69,6 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Fourier.cs" />
-    <Compile Include="ShortTimes.cs" />
     <Compile Include="TestFunction.cs">
       <SubType>Form</SubType>
     </Compile>

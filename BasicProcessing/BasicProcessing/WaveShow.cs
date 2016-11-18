@@ -23,6 +23,7 @@ namespace BasicProcessing
         private string root = @"..\..\音ファイル";
         public readonly int[] rank;
         public const int divnum = 200;
+        public static double sec;
         public double fru_base;
         public static double fs = 44100.0;
         public static double heldz_base = 0;
@@ -34,6 +35,7 @@ namespace BasicProcessing
         {
             InitializeComponent();
             rank = new int[3]{1,2,3};
+            sec = fs / divnum;
         }
         /// <summary>
         /// 第１番目のウィンドウから基本呼び出される。
@@ -56,6 +58,8 @@ namespace BasicProcessing
 
             lDataList = lDataList1.Select(c => (double)c);
             rDataList = rDataList1.Select(c => (double)c);
+
+            sec = lDataList.Count() / fs / divnum;
 
             // ヘッダーエラーは保留とする
             //これによると、不適切なファイルとして再生できないソフトもある。
@@ -220,8 +224,8 @@ namespace BasicProcessing
             function.ComplexStaff ex
                 = new function.ComplexStaff(divnum, lDataList.ToArray());
 
-            ex.fs = 44100;
-            ex.mergin = 50;
+            ComplexStaff.fs = 44100;
+            ComplexStaff.mergin = 50;
             ex.setTimeDistance(0.02);
             //ex.setTimeDistance(20 / 100);
 
@@ -263,8 +267,8 @@ namespace BasicProcessing
             function.ComplexStaff ex
                 = new function.ComplexStaff(divnum, lDataList.ToArray());
 
-            ex.fs = 44100;
-            ex.mergin = 50;
+            ComplexStaff.fs = 44100;
+            ComplexStaff.mergin = 50;
             ex.setTimeDistance(0.02);
             //ex.setTimeDistance(20 / 100);
 
@@ -322,22 +326,71 @@ namespace BasicProcessing
                     return reobj;
                 }).ToArray();
             });
-
             return obj.ToArray();
+        }
+        private IEnumerable<double> TracePath(IEnumerable<double> x, double percent)
+        {
+            int startI = 0; int tmpI = 0;
+            double tmpVal = 0.0;
+            double ans = 0.0;
+            var aQuery = x.Select((c, i) => new { Index = i, Val = c - x.Max() * percent });
+            foreach (var cursol in aQuery)
+            {
+                ans = 0.0;                                          // ans 初期化
+                if (cursol.Index == 0)
+                {
+                    tmpVal = cursol.Val;
+                    continue;
+                }
+
+
+                if(tmpVal * cursol.Val < 0)
+                {
+                    tmpI = Math.Abs(tmpVal) > Math.Abs(cursol.Val)
+                        ? cursol.Index : cursol.Index - 1;          //x[c.i-1]==tmpVal
+                    if(startI == 0)
+                    {
+                        startI = tmpI;                              //初期化
+                    }
+                    else
+                    {
+                        var trace = x.Skip(startI).Take(tmpI);
+                        if (trace.Count() > 0)
+                            ans = trace.Max();                      // ans 更新
+                        startI = cursol.Index;                      // s 進める
+                    }
+                }
+                tmpVal = cursol.Val;
+                if(ans!=0)
+                    Console.WriteLine("{0}:[1] => {2}",cursol.Index,　x.ElementAt(cursol.Index), ans);
+                yield return ans;
+            }
         }
         private void button4_Click(object sender, EventArgs e)
         {
-            double A = lDataList.Select(c => Math.Abs(c)).Max();
-
+            int count = 20;
+            int percent = 95; // percent
+            int decreace = 5; //percent
+            var data = TracePath(outPut, percent);
+            do
+            {
+                percent -= decreace;
+                data = TracePath(outPut, percent);
+                Console.WriteLine("Continue!?");
+            } while (data.Count() > count);
+            Console.WriteLine("End");
         }
+        private IEnumerable<double> outPut = new double[0];
         static int cursol = 0;
         static double[] data;
         private function.File f = new function.File();
+        private const int len = 1000;
         void init()
         {
-            int len = 1000;
             if (len * (cursol + 1) > lDataList.Count()) cursol = 0;
-            data = lDataList.Skip(len * cursol++).Take(len).ToArray();
+            data = lDataList.Skip(len * cursol).Take(len).ToArray();
+
+            button4.Enabled = (outPut.Count() > 0);
         }
         private double[] tourWave(double[] x)
         {
@@ -365,7 +418,7 @@ namespace BasicProcessing
 
             return ans;
         }
-        private void initCepstrum()
+        private double[] initCepstrum()
         {
             ActiveComplex ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hamming);
             ac.FTransform(function.Fourier.ComplexFunc.FFT);
@@ -411,6 +464,8 @@ namespace BasicProcessing
             f.APlot(
                 chart2, ans,
                 "周波数", "PowCep");
+
+            return ans.ToArray();
         }
         private void ACF_button_Click(object sender, EventArgs e)
         {
@@ -423,14 +478,14 @@ namespace BasicProcessing
                 "時間", "acf");
                 */
 
-            double[] mag = initFFT();
+            double[] mag = initFFT(); outPut = mag;
             double[] dif = tourWave(mag);
             f.APlot(
                 chart1, mag,
-                "周波数", "PowCep");
+                "周波数", "FFT");
             f.APlot(
                 chart2, dif,
-                "周波数", "PowCep");
+                "周波数", "S-FFT");
 
             label2.Text = "sampleNo :" + cursol.ToString();
         }
@@ -438,17 +493,18 @@ namespace BasicProcessing
         private void SDF_button_Click(object sender, EventArgs e)
         {
             init();
-            initCepstrum();
+            outPut = initCepstrum();
             label2.Text = "sampleNo :" + cursol.ToString();
-
         }
 
         private void NSDF_button_Click(object sender, EventArgs e)
         {
             init(); initFFT();
+            var y = DSP.TimeDomain.effector.M_NSDF(1, data);
+            outPut = y;
             f.APlot(
                 chart1,
-                DSP.TimeDomain.effector.M_NSDF(1, data).ToArray(),
+                y.ToArray(),
                 "時間","nsdf");
             label2.Text = "sampleNo :" + cursol.ToString();
 
@@ -458,72 +514,65 @@ namespace BasicProcessing
         }
         private void test_button_Click(object sender, EventArgs e)
         {
-
             testForHertzOnlyNote();
         }
-        private void BinaryConvert(double[] x, string argc)
-        {
-            int count = x.Length;
-            double myu_T = x.Sum() / count;
-            double max_val = 0; double max_threshold = 1;
-
-            var classA = Enumerable.Range(0, count)
-                .Select(c => x.Take(c).ToArray());
-            var classB = Enumerable.Range(0, count)
-                .Select(c => x.Skip(c).ToArray());
-
-            foreach(int i in Enumerable.Range(0, count))
-            {
-                double[] c1 = classA.ElementAt(i);
-                double[] c2 = classB.ElementAt(i);
-                int n1 = c1.Count();
-                int n2 = c2.Count();
-                double myu1 = c1.Sum() / n1;
-                double myu2 = c2.Sum() / n2;
-                double sigma1 = c1.Select(c => c * c).Sum() / n1;
-                double sigma2 = c2.Select(c => c * c).Sum() / n2;
-                double sigma_w = (n1 * sigma1 + n2 + sigma2) / (n1 + n2);
-                double sigma_B = (n1 * Math.Pow(myu1 - myu_T,2) + n2 * Math.Pow(myu2 - myu_T,2)) / (n1 + n2);
-
-                if(max_val < (sigma_B / sigma_w))
-                {
-                    max_val = sigma_B / sigma_w;
-                    max_threshold = i;
-                }
-            }
-            Console.WriteLine("{0}:閾値:{1}より周波数軸を2分できる", argc, max_threshold);
-        }
-
         private void FFT_button_Click(object sender, EventArgs e)
         {
 
             init();
-            
-            ActiveComplex ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hanning);
-            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            ActiveComplex ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hamming);
+            ac.MusucalTransform();
 
             var mag = ac.GetMagnitude();
             double max = mag.Max();
+            double maxFrequency = 27.5 * Math.Pow(2, mag.Count()/12);
+            
+            // mag[0] => A0 = 27.5 * 2^(0/12)
 
             double[] ans = mag.Select(c => c / max).ToArray();
-            f.APlot(
-                chart2, ans,
-                "周波数", "fft");
-
-            ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hamming);
-            ac.MusucalTransform();
-
-            mag = ac.GetMagnitude();
-            max = mag.Max();
-
-            ans = mag.Select(c => c / max).ToArray();
+            outPut = ans;
             f.APlot(
                 chart1, ans,
                 "周波数", "Mfft");
 
 
+            ac = new ActiveComplex(data, function.Fourier.WindowFunc.Hamming);
+            ac.FTransform(function.Fourier.ComplexFunc.FFT);
+
+            mag = ac.GetMagnitude();
+            max = mag.Max();
+
+            int thretholdIndex = Enumerable.Range(0, int.MaxValue)
+                .Select((_, i) => new { Index = i, Val = i * fs / mag.Count() })
+                .Where(c => c.Val > maxFrequency)
+                .Select(c => c.Index)
+                .First();
+
+            ans = mag.Select(c => c / max)
+                .Select((val,i)=> new { Index = i, Val = val })
+                .TakeWhile(c => c.Index < thretholdIndex)
+                .Select(c => c.Val)
+                .ToArray();
+            f.APlot(
+                chart2, ans,
+                "周波数", "fft");
 
             label2.Text = "sampleNo :" + cursol.ToString();
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            int tmp = decimal.ToInt32(numericUpDown1.Value);
+            if (len * (cursol + 1) > lDataList.Count())
+            {
+                numericUpDown1.Value = 0;
+                cursol = 0;
+            }
+            else
+            {
+                cursol = tmp;
+            }
         }
     }
 }

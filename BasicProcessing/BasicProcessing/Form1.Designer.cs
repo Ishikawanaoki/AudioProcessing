@@ -67,6 +67,8 @@
             // chart1_checkBox
             // 
             this.chart1_checkBox.AutoSize = true;
+            this.chart1_checkBox.Checked = true;
+            this.chart1_checkBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chart1_checkBox.Location = new System.Drawing.Point(256, 41);
             this.chart1_checkBox.Name = "chart1_checkBox";
             this.chart1_checkBox.Size = new System.Drawing.Size(56, 16);
@@ -78,6 +80,8 @@
             // chart2_checkBox
             // 
             this.chart2_checkBox.AutoSize = true;
+            this.chart2_checkBox.Checked = true;
+            this.chart2_checkBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chart2_checkBox.Location = new System.Drawing.Point(256, 63);
             this.chart2_checkBox.Name = "chart2_checkBox";
             this.chart2_checkBox.Size = new System.Drawing.Size(56, 16);
