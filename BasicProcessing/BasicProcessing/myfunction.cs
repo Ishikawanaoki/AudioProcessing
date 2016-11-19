@@ -312,6 +312,58 @@ namespace function
         {
             return complex.Length != 0;
         }
+        // call HERE inner
+        private Tuple<int, double> Max(ref IEnumerable<double> x)
+        {
+            int maxI = 0;
+            double maxV = 0.0f;
+            foreach (var item in x.Select((v, i) => new { V = v, I = i }))
+            {
+                if (item.V > maxV)
+                {
+                    maxI = item.I;
+                    maxV = item.V;
+                }
+            }
+            Tuple<int, double> max = Tuple.Create(maxI, maxV);
+            getDomain(ref x, max);
+            return Tuple.Create(maxI, maxV);
+        }
+        private void getDomain(ref IEnumerable<double> x, Tuple<int, double> max)
+        {
+            int tmpIndex = max.Item1, start = 0, end = 0;
+            double tmpVal = max.Item2;
+
+            for (int i = max.Item1; i < x.Count(); i++)
+            {
+                if (!(x.ElementAtOrDefault(i) > x.ElementAtOrDefault(i + 1)))
+                {
+                    end = i;
+                    break;
+                }
+            }
+            for (int j = max.Item1; j >= 0; j--)
+            {
+                if (!(x.ElementAtOrDefault(j) > x.ElementAtOrDefault(j - 1)))
+                {
+                    start = j;
+                    break;
+                }
+            }
+            x = Cutoff(x, start, end);
+        }
+        private IEnumerable<double> Cutoff(IEnumerable<double> x, int start, int end)
+        {
+            int count = complex.Count();
+            double[] ans = new double[count];
+            foreach (int index in Enumerable.Range(0, count))
+            {
+                if (index <= start) ans[index] = x.ElementAt(index);
+                else if (index >= end) ans[index] = x.ElementAt(index);
+                else ans[index] = 0;
+            }
+            return ans;
+        }
         /// <summary>
         /// return IEnumerable contains a num of rank lines
         /// 入力されたランクと、等しい個数の最大値を求めるシーケンスを返す。
@@ -347,19 +399,35 @@ namespace function
         /// 
         public IEnumerable<int> GetRanked_Index(int[] rank)
         {
-            foreach(var value in GetRanked_Muximums(rank))
+            int countup = 1;
+            var que = GetMagnitude();
+
+            return rank.Select(c => 
             {
-                yield return GetMagnitude()
-                    .Select((val, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
-                    {
-                        if (val == value) return index;             // 任意順位 str に該当
-                        else            return -1;               // 該当なし
-                    })
-                    .Where(c => c > 0)                // 該当なしを弾く
-                    .FirstOrDefault();                 // 最初の対象を
-                                                       // シーケンスで返す
-                
-            }
+                int ans=0;
+                while (countup <= c)
+                {
+                    Tuple<int, double> tu = Max(ref que);
+                    ans= tu.Item1;
+
+                    countup++;
+                }
+                return ans;
+            });
+            
+            /*foreach(var value in GetRanked_Muximums(rank))
+             {
+                 yield return GetMagnitude()
+                     .Select((val, index) => // 振幅スペクトルから値 nameと、indexを順次に取り出す
+                     {
+                         if (val == value) return index;             // 任意順位 str に該当
+                         else            return -1;               // 該当なし
+                     })
+                     .Where(c => c > 0)                // 該当なしを弾く
+                     .FirstOrDefault();                 // 最初の対象を
+                                                        // シーケンスで返す
+
+             }*/
         }
         /*public IEnumerable<int> GetRanked_Indexies(int rank)
         {

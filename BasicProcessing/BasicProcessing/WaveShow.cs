@@ -330,55 +330,160 @@ namespace BasicProcessing
         }
         private IEnumerable<double> TracePath(IEnumerable<double> x, double percent)
         {
-            int startI = 0; int tmpI = 0;
-            double tmpVal = 0.0;
+            int startI = 0; int tmpStart = 0;
+            Tuple<int, double> tmp = Tuple.Create(0,x.First());
             double ans = 0.0;
             var aQuery = x.Select((c, i) => new { Index = i, Val = c - x.Max() * percent });
+            Console.WriteLine("AllCount = {0}", aQuery.Where(c => c.Val > 0).Count());
             foreach (var cursol in aQuery)
             {
-                ans = 0.0;                                          // ans 初期化
-                if (cursol.Index == 0)
-                {
-                    tmpVal = cursol.Val;
-                    continue;
-                }
+                ans = 0.0;
 
-
-                if(tmpVal * cursol.Val < 0)
+                if ((tmp.Item2 * cursol.Val < 0) && (cursol.Index != 0))
                 {
-                    tmpI = Math.Abs(tmpVal) > Math.Abs(cursol.Val)
-                        ? cursol.Index : cursol.Index - 1;          //x[c.i-1]==tmpVal
+                    tmpStart = Math.Abs(tmp.Item2) > Math.Abs(cursol.Val)
+                        ? cursol.Index : tmp.Item1;          //x[c.i-1]==tmpVal
                     if(startI == 0)
                     {
-                        startI = tmpI;                              //初期化
+                        startI = tmpStart;                              //初期化
                     }
                     else
                     {
-                        var trace = x.Skip(startI).Take(tmpI);
+                        var trace = x.Skip(startI).Take(tmp.Item1);
                         if (trace.Count() > 0)
                             ans = trace.Max();                      // ans 更新
-                        startI = cursol.Index;                      // s 進める
+                        startI = 0;                      // s 進める
                     }
                 }
-                tmpVal = cursol.Val;
+                tmp = Tuple.Create(cursol.Index, cursol.Val);
                 if(ans!=0)
                     Console.WriteLine("{0}:[1] => {2}",cursol.Index,　x.ElementAt(cursol.Index), ans);
                 yield return ans;
             }
         }
+        private double[] firstTest()
+        {
+            double[] ans = new double[outPut.Count()];
+            Tuple<int, double> tmp = Tuple.Create(0, outPut.First());
+            double max = outPut.Max(); double min = outPut.Min();
+            var aQuery = outPut.Select((c, i) => new { Index = i, Val = c - (max-min)});
+            foreach (var cursol in aQuery)
+            {
+                if ((tmp.Item2 * cursol.Val < 0) && (cursol.Index != 0))
+                {
+                    int index = Math.Abs(tmp.Item2) > Math.Abs(cursol.Val)
+                        ? cursol.Index : tmp.Item1;
+                    ans[index] = outPut.ElementAt(index);
+                }
+
+                tmp = Tuple.Create(cursol.Index, cursol.Val);
+
+            }
+            return ans;
+        }
+        private Tuple<int, double> Max(ref IEnumerable< double> x)
+        {
+            int maxI = 0;
+            double maxV = 0.0f;
+            foreach (var item in x.Select((v,i)=>new { V=v, I=i }))
+            {
+                if (item.V > maxV)
+                {
+                    maxI = item.I;
+                    maxV = item.V;
+                }
+            }
+            Tuple<int, double> max = Tuple.Create(maxI, maxV);
+            Console.WriteLine("max ={0}:{1}", maxI, maxV);
+            x = getDomain(x, max);
+            return Tuple.Create(maxI, maxV);
+        }
+        private IEnumerable<double> Cutoff(IEnumerable<double> x, int start, int end)
+        {
+            int count = outPut.Count();
+            double[] ans = new double[count];
+            foreach(int index in Enumerable.Range(0, count))
+            {
+                if (index <= start) ans[index] = x.ElementAt(index);
+                else if (index >= end) ans[index] = x.ElementAt(index);
+                else ans[index] = 0;
+            }
+            return ans;
+        }
+        private IEnumerable<double> getDomain(IEnumerable<double> x, Tuple<int,double> max)
+        {
+            int start = 0, end = 0;
+
+            for(int i=max.Item1; i<x.Count(); i++)
+            {
+                if(x.ElementAtOrDefault(i) <= x.ElementAtOrDefault(i + 1))
+                {
+                    end = i;
+                    break;
+                }
+            }
+            for(int j=max.Item1; j>=0; j--)
+            {
+                if(x.ElementAtOrDefault(j) <= x.ElementAtOrDefault(j - 1))
+                {
+                    start = j;
+                    break;
+                }
+            }
+            return Cutoff(x, start, end);
+        }
+        private IEnumerable<Tuple<int, double>> secondTest(int ones)
+        {
+            int countup = 1;
+            var que = outPut;
+            
+            while (countup <= ones)
+            {
+                Tuple<int, double> tu = Max(ref que);
+                yield return tu;
+
+                countup++;
+            }
+        }
+        private IEnumerable<double> SubScondTest(int ones)
+        {
+            double[] ans = new double[outPut.Count()];
+            var que = secondTest(ones);
+            foreach (var item in que)
+            {
+                ans[item.Item1] = item.Item2;
+            }
+
+            return ans;
+        }
         private void button4_Click(object sender, EventArgs e)
         {
+            /*
+            foreach (var item in outPut)
+                Console.Write(item.ToString() + ", ");
+
             int count = 20;
-            int percent = 95; // percent
+            int percent = 0; // percent
             int decreace = 5; //percent
             var data = TracePath(outPut, percent);
             do
             {
-                percent -= decreace;
+                percent += decreace;
                 data = TracePath(outPut, percent);
-                Console.WriteLine("Continue!?");
-            } while (data.Count() > count);
+                Console.WriteLine("count = {0}", data.Where(c=>c>0).Count());
+            } while (data.Where(c => c>0).Count() < count);
             Console.WriteLine("End");
+            */
+            int count = outPut.Count();
+            double[] ans //= firstTest();
+                         = SubScondTest(30).ToArray();
+                        //= Cutoff(outPut, count / 2, count / 4 * 3).ToArray();
+            f.APlot(
+                chart2, ans,
+                "周波数", "test");
+            //foreach(var index in Enumerable.Range(0, outPut.Count()))
+            //Console.WriteLine("{0} => {1},  ",outPut.ElementAt(index), ans[index]);
+            Console.WriteLine("{0} => {1}", outPut.Count(), ans.Where(c => c != 0).Count());
         }
         private IEnumerable<double> outPut = new double[0];
         static int cursol = 0;
@@ -443,7 +548,7 @@ namespace BasicProcessing
                 .TakeWhile(c => c > 0.01)
                 .ToArray();
             f.APlot(
-                chart1, ans,
+                chart2, ans,
                 "周波数", "AmpCep");
 
 
@@ -462,7 +567,7 @@ namespace BasicProcessing
                 .Select(c => c / max)
                 .ToArray();
             f.APlot(
-                chart2, ans,
+                chart1, ans,
                 "周波数", "PowCep");
 
             return ans.ToArray();
