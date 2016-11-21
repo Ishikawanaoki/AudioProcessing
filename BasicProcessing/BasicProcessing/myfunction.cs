@@ -541,7 +541,7 @@ namespace function
         }
         public void MusucalTransform()
         {
-            complex = Fourier.MusicalDFT(complex.ToArray());
+            complex = Fourier.MusicaDFT(complex.ToArray());
         }
         public double[] FunctionTie()
         {
@@ -777,19 +777,19 @@ namespace function
                 return val * winValu;
             });
         }
-        public static Complex[] MusicalDFT(Complex[] x)
+        public static Complex[] MusicaDFT(Complex[] x)
         {
             int N = x.Length;
             double fA0 = 27.5; int num = 11;
             Complex[] X = new Complex[12 * num];
-            double theta = (-2) * Math.PI;
+            double theta = (-2) * Math.PI / N;
             
             for (int k = 0; k < num * 12; k++)
             {
                 X[k] = new Complex(0, 0);
                 for (int n = 0; n < N; n++)
                 {
-                    Complex temp = Complex.from_polar(1, theta * n * Math.Pow(fA0, k / 12));
+                    Complex temp = Complex.from_polar(1, theta * n * fA0 * Math.Pow(2, k / 12));
                     X[k] += temp * x[n];
                 }
             }

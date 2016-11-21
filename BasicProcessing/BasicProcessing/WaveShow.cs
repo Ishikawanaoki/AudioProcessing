@@ -219,20 +219,14 @@ namespace BasicProcessing
         private void testForHertzOnlyNote()
         {
             string filename = root + @"\testVer1.txt";
-
-            // 短時間フーリエ変換するための格納・実行クラスの生成
             function.ComplexStaff ex
                 = new function.ComplexStaff(divnum, lDataList.ToArray());
 
             ComplexStaff.fs = 44100;
             ComplexStaff.mergin = 50;
             ex.setTimeDistance(0.02);
-            //ex.setTimeDistance(20 / 100);
 
             double[][] heldz = ex.GetMusicalNote(rank);
-
-            //heldz = Pass(heldz);
-
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
@@ -240,10 +234,8 @@ namespace BasicProcessing
                     foreach (double[] str in heldz)
                     {
                         int length = str.Length - 1;
-                        #region changed 201610111559
                         foreach (double data in str)
                         {
-                            //sw.Write(data + ",");
                             sw.Write(data);
                             if (length-- > 0)
                                 sw.Write(",");
@@ -251,9 +243,6 @@ namespace BasicProcessing
                                 sw.WriteLine();
                             Console.Write("{0},", data);
                         }
-                        //Console.WriteLine("");
-                        #endregion
-
                     }
                 }
             }
@@ -262,20 +251,13 @@ namespace BasicProcessing
         private void testForHertz()
         {
             string filename = root + @"\testVer1.txt";
-
-            // 短時間フーリエ変換するための格納・実行クラスの生成
             function.ComplexStaff ex
                 = new function.ComplexStaff(divnum, lDataList.ToArray());
 
             ComplexStaff.fs = 44100;
             ComplexStaff.mergin = 50;
             ex.setTimeDistance(0.02);
-            //ex.setTimeDistance(20 / 100);
-
             double[][] heldz = ex.GetHertz(rank);
-
-            //heldz = Pass(heldz);
-
             using (System.IO.FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
                 using (System.IO.StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
@@ -283,7 +265,6 @@ namespace BasicProcessing
                     foreach (double[] str in heldz)
                     {
                         int length = str.Length - 1;
-                        #region changed 201610111559
                         foreach (double data in str)
                         {
                             //sw.Write(data + ",");
@@ -294,39 +275,54 @@ namespace BasicProcessing
                                 sw.WriteLine();
                             Console.Write("{0},", data);
                         }
-                        //Console.WriteLine("");
-                        #endregion
-
                     }
                 }
             }
             Console.WriteLine("配列を保存しました。");
         }
         /// <summary>
-        /// 同じ音階を隣り合うdouble[]があった時、後方の値をゼロにする
+        /// 隣り合う時間で同じものがある場合には消し、
+        /// また0があれば要素としてカウントしない。
         /// </summary>
         /// <param name="x"></param>
         /// <returns></returns>
         private double[][] Pass(IEnumerable<double[]> x)
         {
-            double[] tmp = rank.Select(c => (double)c).ToArray();
-
-            var obj = x.Select(c =>
+            var marge = x.Select((v, i) =>
             {
-                return c.Select(item =>
-                {
-                    var reobj = item;
-                    foreach (double tmpt in tmp)
-                        if (item == tmpt)
-                        {
-                            reobj = 0; break;
-                        }
-
-                    tmp = c.ToArray();
-                    return reobj;
-                }).ToArray();
+                return new { pre = x.ElementAtOrDefault(i - 1), check = v };
             });
-            return obj.ToArray();
+            return marge.Select(c =>
+            {
+                double[] ans = new double[c.check.Length];
+                foreach (var check in c.check.Select((v, i) => new { V = v, I = i }))
+                {
+                    if (c.pre == null) continue;
+                    foreach (var pre in c.pre)
+                    {
+                        if (pre == check.V)
+                        {
+                            ans[check.I] = -1;
+                        }
+                        else if(ans[check.I] != -1)
+                        // 一つでも同じものがあれば、永久に-1になる
+                        {
+                            ans[check.I] = check.V;
+                        }
+                    }
+                }
+                // -1と0は弾く。
+
+                var tmp =  ans.Where(v => v > 0);
+                if (tmp.Count() > 0)
+                {
+                    return ans.ToArray();
+                }
+                else
+                {
+                    return new double[1];
+                }
+            }).ToArray();
         }
         private IEnumerable<double> TracePath(IEnumerable<double> x, double percent)
         {
@@ -575,14 +571,6 @@ namespace BasicProcessing
         private void ACF_button_Click(object sender, EventArgs e)
         {
             init();
-            /*
-            initFFT();
-            f.APlot(
-                chart1,
-                DSP.TimeDomain.effector.M_ACF(1, data).ToArray(),
-                "時間", "acf");
-                */
-
             double[] mag = initFFT(); outPut = mag;
             double[] dif = tourWave(mag);
             f.APlot(
